@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+        *{
+            box-sizing: border-box;
+            position: relative;
+        }
+        .main{
+            text-align:center;
+            margin:auto;
+        }
+
+        table{
+            margin:auto;
+        }
+
+        .main input{
+            padding:10px;
+            text-align:center;
+            font-size:2em;
+        }
+
+        .main .play{
+            width:50px;
+            height:50px;
+        }
+
+        .input_block{
+            display:block;
+            margin:5px auto;
+        }
+
+        .possible{
+            border:solid 1px #777;
+            padding:10px;
+            margin:auto;
+            width:400px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class='main'>
+        
+    </div>
+    <script src='words.js'></script>
+    <script>
+        
+        const main = document.querySelector('.main');
+
+        const containsElement = document.createElement('input');
+        containsElement.placeholder = 'contains';
+        containsElement.className = 'input_block';
+        containsElement.addEventListener('keyup',update,false);
+        main.appendChild(containsElement);
+
+        const excludesElement = document.createElement('input');
+        excludesElement.placeholder = 'excludes';
+        excludesElement.className = 'input_block';
+        excludesElement.addEventListener('keyup',update,false);
+        main.appendChild(excludesElement);
+
+        const table = document.createElement('table');
+        main.appendChild(table);
+        const row = document.createElement('tr');
+        table.appendChild(row);
+        const letterElements = [];
+        for(let x = 0; x < 5; x++){
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            letterElements.push(input);
+            input.className = 'play';
+            input.addEventListener('keyup',update,false);
+            td.appendChild(input);
+            row.appendChild(td);
+        }
+
+        const possible = document.createElement('div');
+        possible.className = 'possible';
+        main.appendChild(possible);
+
+        function check_word(letters,word){
+            for(let i = 0; i < letters.length; i++){
+                if(letters[i] && letters[i] !== word[i]){
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function add_unique(arr,item){
+            if(arr.indexOf(item) === -1){
+                arr.push(item);
+            }
+        }
+
+        function update(){
+            const letters = letterElements.map(elem => elem.value);
+            const excludes = excludesElement.value.split('');
+            const contains = containsElement.value.split('');
+            let matches = words;
+
+            if (contains.length > 0){
+                for(let word of matches){
+                    let add = true;
+                    for(let letter of contains){
+                        if(word.indexOf(letter) == -1 || matches.indexOf(word) !== -1){
+                            add = false;
+                            break;
+                        }
+                    }
+                    if(add){
+                        matches.push(word);
+                    }
+                }
+            }
+
+            if ( excludes.length > 0){
+                let next = []
+                for(let word of matches){
+                    let add = true;
+                    for(let letter of excludes){
+                        if(word.indexOf(letter) !== -1 || next.indexOf(word) !== -1){
+                            add = false
+                            break
+                        }
+                    }
+                    if(add){
+                        next.push(word);
+                    }
+                }
+                matches = next
+            }
+        
+            const check_letters = true;
+            for(let letter in letters){
+                if(!letter){
+                    check_letters = false
+                }
+            }
+
+
+            if(check_letters){
+                let next = [];
+                for(let word of matches){
+                    if(check_word(letters,word)){
+                        add_unique(next,word);
+                    }
+                }
+                matches = next;
+            }
+
+            possible.textContent = matches.join(', ');
+
+        }
+
+    </script>
+
+</body>
+</html>
