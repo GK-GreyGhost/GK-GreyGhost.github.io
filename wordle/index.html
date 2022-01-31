@@ -114,18 +114,20 @@
             let matches = words;
 
             if (contains.length > 0){
+                let next = [];
                 for(let word of matches){
                     let add = true;
                     for(let letter of contains){
-                        if(word.indexOf(letter) == -1 || matches.indexOf(word) !== -1){
+                        if(word.indexOf(letter) == -1 || next.indexOf(word) !== -1){
                             add = false;
                             break;
                         }
                     }
                     if(add){
-                        matches.push(word);
+                        next.push(word);
                     }
                 }
+                matches = next;
             }
 
             if ( excludes.length > 0){
