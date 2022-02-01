@@ -125,6 +125,15 @@
             "December":daysInMonth(11)
         }
 
+        function dayPad(parent,year,month,day){
+            const date = new Date(year,month,day);
+            let dayOfWeek = date.getDay();
+            if (dayOfWeek === 0){
+                return 6;
+            }
+            return dayOfWeek - 1;
+        }
+
         const y = new Date().getFullYear();
         let m = 0;
         for(let key in months){
@@ -138,11 +147,21 @@
             table.append(tr);
             let c = 0; 
 
+            const pad = dayPad(tr,y,m,1)
+            for(let i = 0; i < pad; i++){
+                const td = document.createElement('td');
+                const ta = document.createElement('textarea');
+                ta.setAttribute('disabled','true');
+                td.appendChild(ta);
+                tr.appendChild(td);
+            }
+
             for(let i = 0; i < months[key]; i++){
 
-                if(c >= 7){
+                if(tr.children.length >= 7){
                     c = 0;
                     tr = document.createElement('tr');
+                    
                     table.append(tr);
                 }
                 
