@@ -20,7 +20,7 @@
             border:solid 1px #000;
             border-radius:10px;
             width:600px;
-            height:350px;
+            height:275px;
             margin:auto;
             padding:auto;
             text-align:center;
@@ -29,6 +29,7 @@
             left:0px;
             right:0px;
             bottom:0px;
+            background:#fff;
         }
 
         button{
@@ -83,9 +84,10 @@
                 document.querySelector('.display').textContent = timer;
                 if (timer <= 0){
                     container.style.background = '#f80';
+                    timer = 40;
                 }
-                setTimeout(loop,1000);
             }
+            setTimeout(loop,1000);
         }
 
     </script>

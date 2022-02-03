@@ -66,7 +66,7 @@
         }
 
         .flag{
-            background:rgb(57, 134, 198) !important;
+            background:hsl(207, 55%, 50%) !important;
             box-shadow:none !important;
             filter:drop-shadow(2px 2px 2px rgba(0,0,0,0.4));
         }
@@ -196,7 +196,7 @@
     var shifting = {};
     var flag_delay_time = 180;
     var gameover = false; 
-    var flag_color = [57, 134, 198];
+    var flag_color = [207, 55, 50];
     var mine_color = [0, 50, 50];
     var default_color = [34, 34, 34];
     var grid = new Grid(15, 15);
@@ -221,11 +221,14 @@
         while (mines_left > 0) {
             var x = Math.floor(rng() * grid.width);
             var y = Math.floor(rng() * grid.height);
-            grid.get(x, y).mine = true;
-            grid.forSurrounding(x, y, function (x, y, data) {
-                data.dangerLevel += 1;
-            });
-            mines_left -= 1;
+            const data = grid.get(x,y);
+            if(!data.mine){
+                grid.get(x, y).mine = true;
+                grid.forSurrounding(x, y, function (x, y, data) {
+                    data.dangerLevel += 1;
+                });
+                mines_left -= 1;
+            }
         }
     }
     
@@ -310,8 +313,15 @@
         for(let x = 0; x < grid.width; x++){
             for(let y = 0; y < grid.height; y++){
                 const data = grid.get(x,y);
+                if(data.flag && !data.mine){
+                    return
+                }
+                if(data.mine && !data.flag){
+                    return;
+                }
             }
         }
+        alert("VICTORY!");
     }
     
     function hideBoard(){
