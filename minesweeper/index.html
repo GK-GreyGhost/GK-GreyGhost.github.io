@@ -27,7 +27,6 @@
             height:3vmin;
             display:inline-block;
             vertical-align:middle;
-            padding:15px;
             text-align:center;
             user-select: none;
         }
@@ -54,6 +53,8 @@
             background:#fff;
             font-weight:bolder;
             font-size:1.2em;
+            line-height:3vmin;
+            vertical-align: middle;
         }
 
         .info{
@@ -65,7 +66,7 @@
         }
 
         .flag{
-            background:hsl(20,55%,50%) !important;
+            background:rgb(57, 134, 198) !important;
             box-shadow:none !important;
             filter:drop-shadow(2px 2px 2px rgba(0,0,0,0.4));
         }
@@ -195,7 +196,7 @@
     var shifting = {};
     var flag_delay_time = 180;
     var gameover = false; 
-    var flag_color = [20, 55, 50];
+    var flag_color = [57, 134, 198];
     var mine_color = [0, 50, 50];
     var default_color = [34, 34, 34];
     var grid = new Grid(15, 15);
@@ -302,7 +303,16 @@
                 grid.forSurrounding(x, y, revealSurrounding);
             }
         }
+        winCheck();
     };
+
+    function winCheck(){
+        for(let x = 0; x < grid.width; x++){
+            for(let y = 0; y < grid.height; y++){
+                const data = grid.get(x,y);
+            }
+        }
+    }
     
     function hideBoard(){
         for(let x = 0; x < grid.width; x++){
@@ -327,6 +337,7 @@
                         d.element.style.backgroundColor = arrayToColor(mine_color);
                         return;
                     }
+                    d.element.style.backgroundColor = '';
                     d.element.textContent = d.dangerLevel;
                 },(x+y) * 25);
             }
@@ -351,6 +362,11 @@
     
     var last_frame = Date.now();
     update();
+
+    if(localStorage[getToday()]){
+        const data = JSON.parse(localStorage[getToday()]);
+        console.log(data);
+    }
 
     function update() {
         requestAnimationFrame(update);

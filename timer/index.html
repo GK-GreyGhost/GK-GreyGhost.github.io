@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+    <style>
+
+        *{
+            box-sizing: border-box;
+            position:relative;
+        }
+
+        .display{
+            font-size:15em;
+        }
+
+        .container{
+            border:solid 1px #000;
+            border-radius:10px;
+            width:600px;
+            height:350px;
+            margin:auto;
+            padding:auto;
+            text-align:center;
+            position:fixed;
+            top:0px;
+            left:0px;
+            right:0px;
+            bottom:0px;
+        }
+
+        button{
+            padding:10px 25px;
+            border:none;
+            font-size:2em;
+            border-radius:10px;
+            background:none;
+            border:solid 1px #000;
+        }
+
+        button:hover{
+            background:#000;
+            color:#fff;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class='container'>
+        <div class='display'>40</div>
+        <button class='button'>start</button>
+    </div>
+
+    <script>
+        let timer = 40;
+        let running = false;
+        const container = document.querySelector('.container');
+
+        const button = document.querySelector('.button');
+        button.addEventListener('mousedown',function(){
+            if(running){
+                timer = -1;
+                running = false;
+                container.style.background = '#fff';
+                button.textContent = 'start';
+                document.querySelector('.display').textContent = '40';
+            }else{
+                timer = 40;
+                button.textContent = 'reset';
+                container.style.background = '#fff';
+                running = true;
+                loop();
+            }
+        },false);
+
+        function loop(){
+            
+            if(timer > 0){
+                timer -= 1;
+                document.querySelector('.display').textContent = timer;
+                if (timer <= 0){
+                    container.style.background = '#f80';
+                }
+                setTimeout(loop,1000);
+            }
+        }
+
+    </script>
+</body>
+</html>
