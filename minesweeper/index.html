@@ -119,10 +119,12 @@
                         value: 0
                     };
                     this_1.set(x, y, data);
-                    td.addEventListener('mousedown', function () {
+                    td.addEventListener('pointerdown', function (e) {
+                        e.preventDefault();
                         self.onPress(x, y, data);
                     }, false);
-                    td.addEventListener('mouseup', function () {
+                    td.addEventListener('pointerup', function (e) {
+                        e.preventDefault();
                         self.onRelease(x, y, data);
                     }, false);
                     tr.appendChild(td);
@@ -246,7 +248,7 @@
     var randomButton = document.createElement('button');
     randomButton.textContent = 'new random game';
     document.body.appendChild(randomButton);
-    randomButton.addEventListener('mousedown', function () {
+    randomButton.addEventListener('pointerdown', function (e) {
         gameover = true
         revealBoard()
         setTimeout(function(){
@@ -258,7 +260,7 @@
     var dailyButton = document.createElement('button');
     dailyButton.textContent = 'play daily game';
     document.body.appendChild(dailyButton);
-    dailyButton.addEventListener('mousedown', function () {
+    dailyButton.addEventListener('pointerdown', function (e) {
         seed = getToday();
         reset();
     }, false);
