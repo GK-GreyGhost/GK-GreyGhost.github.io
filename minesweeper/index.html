@@ -83,6 +83,15 @@
             color:#fff;
         }
 
+        h1{
+            padding:0px;
+            margin:10px;
+            position:fixed;
+            top:10px;
+            right:10px;
+            opacity: 0.5;
+        }
+
         @media screen and (max-width: 900px){
             td{
                 width:5vmin;
@@ -95,6 +104,7 @@
     </style>
 </head>
 <body>
+    <h1>Daily</h1>
 	<div class='info'>
 		long press to place flag
 	</div>
@@ -219,6 +229,7 @@
         //var rng = new Math.seedrandom(getToday());
         var rng = new Math.seedrandom(seed);
         window.location.hash = seed;
+        document.querySelector('h1').textContent = seed;
         var mines_left = 30;
         while (mines_left > 0) {
             var x = Math.floor(rng() * grid.width);
@@ -236,15 +247,6 @@
     
     reset();
 
-    /*
-    var resetButton = document.createElement('button');
-    resetButton.textContent = 'new game';
-    document.body.appendChild(resetButton);
-    resetButton.addEventListener('mousedown', function () {
-        reset();
-    }, false);
-    */
-    
     var randomButton = document.createElement('button');
     randomButton.textContent = 'new random game';
     document.body.appendChild(randomButton);
