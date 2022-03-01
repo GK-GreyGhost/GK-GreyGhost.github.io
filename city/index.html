@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <title>Minesweeper</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <style>
+        *{
+            box-sizing:border-box;
+            position:relative;
+            font-family:sans-serif;
+        }
+
+        body{
+            background:#ddd;
+        }
+
+        table,td,tr{
+            border-collapse:collapse;
+        }
+        
+        td{
+            width:3vmin;
+            height:3vmin;
+            display:inline-block;
+            vertical-align:middle;
+            text-align:center;
+            user-select: none;
+        }
+
+        table{
+            position:fixed;
+            top:0px;
+            left:0px;
+            right:0px;
+            bottom:0px;
+            margin:auto;
+        }
+
+        td{
+            background:#fff;
+            font-weight:bolder;
+            font-size:1.2em;
+            line-height:5vmin;
+            vertical-align: middle;
+        }
+
+        .info{
+            position:fixed;
+            bottom:10px;
+            left:10px;
+            opacity:0.2;
+            font-size:2em;
+        }
+
+        .flag{
+            background:hsl(207, 55%, 50%) !important;
+            box-shadow:none !important;
+            filter:drop-shadow(2px 2px 2px rgba(0,0,0,0.4));
+        }
+
+        button{
+            padding:10px 25px;
+            border:none;
+            border-radius:5px;
+            margin:5px;
+        }
+
+        button:hover{
+            background:#222;
+            color:#fff;
+        }
+
+        h1{
+            padding:0px;
+            margin:10px;
+            position:fixed;
+            top:10px;
+            right:10px;
+            opacity: 0.5;
+        }
+
+        @media screen and (max-width: 900px){
+            td{
+                width:5vmin;
+                height:5vmin;
+                margin:3px;
+                padding:5px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Daily</h1>
+	<div class='info'>
+		long press to place flag
+	</div>
+    <script>
+    var Grid = /** @class */ (function () {
+        function Grid(w, h) {
+            if (w === void 0) { w = 4; }
+            if (h === void 0) { h = 4; }
+            this.grid = {};
+            var self = this;
+            this.pressed = false;
+            this.width = w;
+            this.height = h;
+            var table = document.createElement('table');
+            document.body.appendChild(table);
+            var _loop_1 = function (x) {
+                var tr = document.createElement('tr');
+                table.appendChild(tr);
+                var _loop_2 = function (y) {
+                    var td = document.createElement('td');
+                    var data = {
+                        element: td,
+                        value: 0
+                    };
+                    this_1.set(x, y, data);
+                    td.addEventListener('pointerdown', function (e) {
+                        e.preventDefault();
+                        self.pressed = true
+                        self.onPress(x, y, data);
+                    }, false);
+                    td.addEventListener('pointerup', function (e) {
+                        e.preventDefault();
+                        self.pressed = false
+                        self.onRelease(x, y, data);
+                    }, false);
+                    td.addEventListener('pointermove',function(e){
+                        e.preventDefault();
+                        self.onHover(x,y,data);
+                    });
+                    tr.appendChild(td);
+                };
+                for (var y = 0; y < this_1.height; y++) {
+                    _loop_2(y);
+                }
+            };
+            var this_1 = this;
+            for (var x = 0; x < this.width; x++) {
+                _loop_1(x);
+            }
+        }
+        Grid.prototype.get = function (x, y) {
+            if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                return this.grid[x + ':' + y];
+            }
+            return null;
+        };
+        Grid.prototype.set = function (x, y, v) {
+            if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                this.grid[x + ':' + y] = v;
+            }
+        };
+        Grid.prototype.forEach = function (callback) {
+            for (var x = 0; x < this.width; x++) {
+                for (var y = 0; y < this.height; y++) {
+                    callback(x, y, this.get(x, y));
+                }
+            }
+        };
+        Grid.prototype.forSurrounding = function (sx, sy, callback) {
+            for (var x = -1; x < 2; x++) {
+                for (var y = -1; y < 2; y++) {
+                    var x2 = sx + x;
+                    var y2 = sy + y;
+                    var data = this.get(x2, y2);
+                    if (data && (x2 != sx || y2 != sy)) {
+                        callback(x2, y2, data);
+                    }
+                }
+            }
+        };
+        Grid.prototype.onPress = function (x, y, data){};
+        Grid.prototype.onRelease = function (x, y, data){};
+        Grid.prototype.onHover = function(x,y,data){};
+        return Grid;
+    }()); 
+    
+    function getToday() {
+        var d = new Date();
+        var s = d.getFullYear() + ':' + (d.getMonth() + 1) + ':' + d.getDate();
+        return s;
+    }
+
+    function revealSurrounding(x, y, data) {
+        if (data.mine || data.flag) {
+            return;
+        }
+        if (!data.element.textContent && !data.mine) {
+            data.element.textContent = data.dangerLevel;
+            if (data.dangerLevel === 0) {
+                setTimeout(function () {
+                    grid.forSurrounding(x, y, revealSurrounding);
+                }, 25);
+            }
+        }
+    }
+
+    var shifting = {};
+    var flag_delay_time = 180;
+    var gameover = false; 
+    var types = {
+        'building':{
+            'color':[0,0,60],
+            damagePerTick:3
+        },
+        'farmland':{
+            'color':[0,15,62],
+            damagePerTick:0
+        },
+        'grass':{
+            'color':[138,35,62],
+        },
+        'water':{
+            'color':[200,30,60],
+        },
+        'street':{
+            'color':[184,16,23],
+        },
+        'solarfarm':{
+            'color':[49,68,64],
+        },
+        'windfarm':{
+            'color':[147,31,84],
+        },
+        'thermalfarm':{
+            'color':[0,40,30]
+        },
+        'wall':{
+            'color':[0,0,10]
+        },
+        'lava':{
+            'color':[0,40,60]
+        }
+    };
+
+    var grid = new Grid(32, 32);
+    var seed = getToday();
+
+    let current_type = 'grass';
+
+    for(let key in types){
+        
+        const b = document.createElement('button');
+        b.textContent = key;
+        b.className = 'toggleButton';
+        b.addEventListener('pointerdown',function(){
+            current_type = key;
+            const buttons = document.querySelectorAll('toggleButton');
+            for(let i = 0; i < buttons.length; i++){
+                buttons.className = buttons.className.replace(' toggled','');
+            }
+        },false);
+
+        document.body.appendChild(b);
+
+    }
+
+    function reset() {
+        shifting = {};
+        gameover = false;
+
+        grid.forEach(function (x, y, data) {
+            data.dangerLevel = 0;
+            data.mine = false;
+            data.flag = false;
+            data.element.style.backgroundColor = arrayToColor(types.grass.color);
+        });
+        hideBoard() 
+        //var rng = new Math.seedrandom(getToday());
+        var rng = new Math.seedrandom(seed);
+        window.location.hash = seed;
+        document.querySelector('h1').textContent = seed;
+        var mines_left = 30;
+        while (mines_left > 0) {
+            var x = Math.floor(rng() * grid.width);
+            var y = Math.floor(rng() * grid.height);
+            const data = grid.get(x,y);
+            if(!data.mine){
+                grid.get(x, y).mine = true;
+                grid.forSurrounding(x, y, function (x, y, data) {
+                    data.dangerLevel += 1;
+                });
+                mines_left -= 1;
+            }
+        }
+    }
+    
+    reset();
+
+    grid.onPress = function (x, y, data) {
+       data.element.style.backgroundColor = arrayToColor(types[current_type].color);
+    };
+
+    grid.onHover = function(x,y,data){
+        if(grid.pressed){
+            data.element.style.backgroundColor = arrayToColor(types[current_type].color);
+        }
+    }
+
+    grid.onRelease = function (x, y, data) {
+        
+    };
+
+    function winCheck(){
+        for(let x = 0; x < grid.width; x++){
+            for(let y = 0; y < grid.height; y++){
+                const data = grid.get(x,y);
+                if(data.flag && !data.mine){
+                    return
+                }
+                if(data.mine && !data.flag){
+                    return;
+                }
+            }
+        }
+        alert("VICTORY!");
+    }
+    
+    function hideBoard(){
+        for(let x = 0; x < grid.width; x++){
+            for(let y = 0; y < grid.height; y++){
+                setTimeout(function(){
+                    const data = grid.get(x,y);
+                    data.element.textContent = '';
+                    data.element.style.backgroundColor = arrayToColor(types.grass.color);
+                    data.element.className = data.element.className.replace(' flag', '');
+                },(x+y) * 25);
+            }
+        }
+    }
+
+    function revealBoard() {
+
+        for(let x = 0; x < grid.width; x++){
+            for(let y = 0; y < grid.height; y++){
+                setTimeout(function(){
+                    const d = grid.get(x,y);
+                    if (d.mine) {
+                        d.element.style.backgroundColor = arrayToColor(mine_color);
+                        return;
+                    }
+                    d.element.style.backgroundColor = '';
+                    d.element.textContent = d.dangerLevel;
+                },(x+y) * 25);
+            }
+        }
+    }
+    
+    function lerp(start, end, t) {
+        return (1 - t) * start + t * end;
+    }
+    
+    function lerpArray(a1, a2, delta) {
+        var out = [];
+        for (var i = 0; i < a1.length; i++) {
+            out.push(lerp(a1[i], a2[i], delta));
+        }
+        return out;
+    }
+    
+    function arrayToColor(arr) {
+        return "hsl(".concat(arr[0], ",").concat(arr[1], "%,").concat(arr[2], "%)");
+    }
+    
+    var last_frame = Date.now();
+    update();
+
+    if(localStorage[getToday()]){
+        const data = JSON.parse(localStorage[getToday()]);
+        console.log(data);
+    }
+
+    function update() {
+        requestAnimationFrame(update);
+        var t = Date.now();
+        var delta = (t - last_frame) / 1000.0;
+        last_frame = t;
+        for (var key in shifting) {
+            var s = shifting[key];
+            s.value = lerpArray(s.value, flag_color, delta * 10);
+            var d = grid.get(s.x, s.y);
+            d.element.style.backgroundColor = arrayToColor(s.value);
+        }
+    }
+
+</script>
+</body>
+</html>
