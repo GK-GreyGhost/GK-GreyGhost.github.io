@@ -14,7 +14,7 @@
 
         body{
             text-align:center;
-
+            background:#efefef;
         }
 
         table,tr,td{
@@ -26,7 +26,7 @@
 
         table{
             max-width:100%;
-            width:400px;
+            min-width:400px;
         }
 
         pre{
@@ -41,9 +41,34 @@
             color:#fff;
         }
 
+        body{
+            display:flex;
+        }
+
+        .project{
+            background:#fff;
+            box-shadow:2px 2px 2px rgba(0,0,0,0.2);
+            padding:10px;
+            margin:10px;
+            border-radius:3px;
+        }
+
+        .complete{
+            background: rgb(199, 241, 247);;
+        }
+
+        .planning{
+            background:#efefef;
+        }
+
+        .not-complete{
+            background:#ccc;
+        }
+
     </style>
 </head>
 <body>
+    <div class="project">
     <h1>Grey's Untitled Project</h1>
     <h3>World Crafting - Phase 1</h3>
     <table>
@@ -51,37 +76,45 @@
             <td>Feature</td>
             <td>Status</td>
         </tr>
-        <tr>
+        <tr class="complete">
             <td>Bushes</td>
             <td>Complete</td>
         </tr>
-        <tr>
+        <tr class="complete">
             <td>Trees</td>
             <td>Complete</td>
         </tr>
-        <tr>
+        <tr class="planning">
             <td>Grass</td>
             <td>Almost There</td>
         </tr>
-        <tr>
-            <td>Camera</td>
+        <tr class="planning">
+            <td>Photography Camera</td>
             <td>Planning</td>
         </tr>
-        <tr>
+        <tr class="planning">
             <td>Shader Camera Filters</td>
             <td>Planning</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Carrying Items</td>
             <td>in progress</td>
         </tr>
-        <tr>
-            <td>Building Editor</td>
-            <td>In Progress</td>
+        <tr class="complete">
+            <td>Wall Editor</td>
+            <td>Complete</td>
         </tr>
-        <tr>
+        <tr class="complete">
+            <td>Door Punch</td>
+            <td>Complete</td>
+        </tr>
+        <tr class="not-complete">
             <td>Terrain Editor</td>
             <td>In Progress, Rough</td>
+        </tr>
+        <tr class="not-complete">
+            <td>Dice Rolling</td>
+            <td>in progress</td>
         </tr>
     </table>
     <h3>Items - Phase 2</h3>
@@ -90,55 +123,55 @@
             <td>Feature</td>
             <td>Status</td>
         </tr>
-        <tr>
+        <tr class="planning">
             <td>Generic / Small Keys & Locks</td>
             <td>Planning</td>
         </tr>
-        <tr>
+        <tr class="planning">
             <td>Named Keys & Locks</td>
             <td>Planning</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Pressure Switch</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Bow and Arrows</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Rifle</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Handgun</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Sword & Shield</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Great Sword</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Bombs</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Arrow Types</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Low Altitude Balloon</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Mid Altitude Balloon</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>High Altitude Balloon</td>
             <td>Not Yet Started</td>
         </tr>
@@ -149,22 +182,130 @@
             <td>Feature</td>
             <td>Status</td>
         </tr>
-        <tr>
+        <tr class="planning">
             <td>Monster Maker</td>
             <td>Planning</td>
-        </tr>
-        <tr>
+        </tr class="not-complete">
+        <tr class="not-complete">
             <td>Zombie</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>Plant Virus</td>
             <td>Not Yet Started</td>
         </tr>
-        <tr>
+        <tr class="not-complete">
             <td>The Watchers</td>
             <td>Not Yet Started</td>
         </tr>
     </table>
+    </div>
+
+    <div class="project">
+        <h1>Godot Character</h1>
+        <table>
+            <tr>
+                <td>Name</td>
+                <td>Release Status / Date</td>
+            </tr>
+            <tr class="complete">
+                <td>Basic Running Animation</td>
+                <td>Complete</td>
+            </tr>
+            <tr class="complete">
+                <td>Side to Side Running Animation</td>
+                <td>Complete</td>
+            </tr>
+            <tr class="not-complete">
+                <td>Idle Animation</td>
+                <td>Not Yet Started</td>
+            </tr>
+            <tr class="not-complete">
+                <td>Jump Animation</td>
+                <td>Not Yet Started</td>
+            </tr>
+            <tr class="not-complete">
+                <td> Crouch Animation</td>
+                <td>Not Yet Started</td>
+            </tr>
+            <tr class="not-complete">
+                <td>Look up and Down</td>
+                <td>Not Yet Started</td>
+            </tr>
+           
+        </table>
+    </div>
+
+    <div class='project'>
+        <h1>Sitra Godot Program</h1>
+        <table>
+            <tr>
+                <td>Feature</td>
+                <td>Notes</td>
+                <td>Progress</td>
+            </tr>
+            <tr>
+                <td>Face Tracking</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Full Body IK</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>'Tra Save States</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>UI</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="project">
+        <h1>Godot Add-Ons</h1>
+        <table>
+            <tr>
+                <td>Name</td>
+                <td>Description</td>
+                <td>Release Status / Date</td>
+            </tr>
+            <tr>
+                <td>Export Package</td>
+                <td>Gather resources from scene and package into folder</td>
+                <td>Alpha Testing</td>
+            </tr>
+            <tr>
+                <td>Surface Placer</td>
+                <td>place objects on surfaces</td>
+                <td>Alpha Testing</td>
+            </tr>
+            <tr>
+                <td>Gun Maker</td>
+                <td>Export based system for making project weapons</td>
+                <td>Needs to be converted to addon</td>
+            </tr>
+            <tr>
+                <td>Character Creator</td>
+                <td>3d Character creator with basic movement modes</td>
+                <td>Planning</td>
+            </tr>
+            <tr>
+                <td>Blender to Godot Transfer Add-On</td>
+                <td>Send models from Blender to Godot in real time</td>
+                <td>Alpha</td>
+            </tr>
+            <tr>
+                <td>Collision Layer Manager</td>
+                <td></td>
+                <td>Alpha</td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>

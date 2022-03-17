@@ -77,6 +77,26 @@
             z-index: 999;
         }
 
+        .options{
+            position:fixed;
+            top:0px;
+            left:0px;
+        }
+
+        .options button{
+            padding:10px;
+            display:block;
+            width:200px;
+            border:none;
+            background:none;
+            color:#777;
+            margin:5px;
+        }
+
+        .options button:hover{
+            background:#fff;
+            color:#000;
+        }
 
     </style>
 
@@ -109,6 +129,35 @@
             return days[date.getDay()];
         }
 
+        const optionsContainer = document.createElement('div');
+        const loadButton = document.createElement('input');
+        loadButton.type = 'file';
+        loadButton.textContent = 'Load New Calendar'
+        loadButton.addEventListener('change',function(){
+            let reader = new FileReader();
+            reader.onload = function(event){
+                localStorage.calendar = event.target.result;
+                window.location.reload();
+            };
+            reader.readAsText(event.target.files[0]);
+        },false);
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Save Current Calendar'
+        saveButton.addEventListener('mousedown',function(){
+            const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            const a = document.createElement('a');
+            a.setAttribute('href',str);
+            a.setAttribute('download','calendar.json');
+            document.body.appendChild(a); // do you still need this?
+            a.click();
+            a.remove();
+        },false);
+        optionsContainer.appendChild(saveButton);
+        optionsContainer.appendChild(loadButton);
+
+        optionsContainer.className = 'options';
+
+        document.body.appendChild(optionsContainer);
 
         const months = {
             "January":daysInMonth(0),
