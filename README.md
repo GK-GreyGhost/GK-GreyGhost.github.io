@@ -1,7 +1,7 @@
 # GreyGhost / Harrison Hartley
-[Mastodon](https://mstdn.social/@Harrison)
-[Twitter](https://twitter.com/pinguinogelato)
-[Twitch](https://twitch.tv/greyghost)
+- [Mastodon](https://mstdn.social/@Harrison)
+- [Twitter](https://twitter.com/pinguinogelato)
+- [Twitch](https://twitch.tv/greyghost)
 
 ---
 
@@ -18,6 +18,6 @@ Welcome to my page! not much here yet, take a peek at Mastodon or Twitter for th
 
 ----
 ## Godot Addons 
-[World Environment Manager](https://github.com/GK-GreyGhost/WorldEnvironmentManager)
-[Collision Layer Manager - Coming Soon](#comingsoon)
+- [World Environment Manager](https://github.com/GK-GreyGhost/WorldEnvironmentManager)
+- [Collision Layer Manager - Coming Soon](#comingsoon)
 ----
