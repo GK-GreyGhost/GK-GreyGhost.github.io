@@ -56,6 +56,20 @@
             padding:10px;
         }
 
+        @media (prefers-color-scheme: dark) {
+            *{
+                background:#000;
+                color:#fff;
+            }
+            .inputContainer, textarea{
+                border:solid 1px #fff;
+            }
+
+            .inputContainer input{
+                border-left:solid 1px #fff;
+            }
+        }
+
         @media screen and (max-width:800px){
 
             .inputContainer input, textarea{
@@ -70,20 +84,7 @@
             }
             textarea{
                 border-top:0px;
-            }
-        }
-
-        @media (prefers-color-scheme: dark) {
-            *{
-                background:#000;
-                color:#fff;
-            }
-            .inputContainer, textarea{
-                border:solid 1px #fff;
-            }
-
-            .inputContainer input{
-                border-left:solid 1px #fff;
+                min-height:150px;
             }
         }
 
