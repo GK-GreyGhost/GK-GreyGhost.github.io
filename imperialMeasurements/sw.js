@@ -1,4 +1,4 @@
-let cacheName = "im-0.2"
+let cacheName = "im-0.3"
 let filesToCache = [
   "/imperialMeasurements/index.html",
   "/imperialMeasurements/favicon.ico"
