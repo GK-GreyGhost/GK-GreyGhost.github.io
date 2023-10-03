@@ -172,7 +172,7 @@
                         feet = parseFloat(buffer,10);
                         buffer = '';
                     }
-                }else if(c === ' '){
+                }else if(c === ' ' && input.indexOf('"') == -1 && input.indexOf("'") == -1){
                     if(feetSet){
                         inches = parseFloat(buffer,10);
                         buffer = '';
