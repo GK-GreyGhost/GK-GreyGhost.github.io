@@ -73,10 +73,18 @@
             }
         }
 
+        @media (prefers-color-scheme: dark) {
+            html{
+                filter:invert(100%);
+            }
+        }
+
     </style>
 </head>
 <body>
     <script>
+
+        let fractionAccuracy = 16;
 
         window.onload = () => {
             "use strict";
@@ -101,6 +109,7 @@
             return input;
         }
 
+
         function decimalToFraction(d,f){
 
             //I'm sure there's a way to calculate this but I'm really tired and need to finish this in 20 minutes 
@@ -123,52 +132,111 @@
             return '';
         }
 
+        
+
         createInput('feet','Feet & Inches').addEventListener('input',function(e){
-            let feet;
+            parseInputImperial(e.target.value);
+        });
+
+        createInput('meters','Meters').addEventListener('input',function(e){
+           parseMetricInput(e.target.value);
+        });
+
+        function parseInputImperial(input){
+            Inputs.meters.value = '';
+
+            let feet = 0;
             let inches = 0;
             let buffer = '';
+            let feetSet = false;
 
-            for(let i = 0; i < e.target.value.length; i++){
-                const c = e.target.value[i];
+            for(let i = 0; i < input.length; i++){
+                const c = input[i];
                 if(c === '"'){
                     inches = parseFloat(buffer,10);
                     buffer = '';
                 }else if(c === "'"){
-                    feet = parseFloat(buffer,10);
-                    buffer = '';
+                    if(feetSet){
+                        output.value = 'error! double foot definition'
+                        return;
+                    }else{    feetSet = true;
+                        feet = parseFloat(buffer,10);
+                        buffer = '';
+                    }
+                }else if(c === ' '){
+                    if(feetSet){
+                        inches = parseFloat(buffer,10);
+                        buffer = '';
+                        break;
+                    }else{
+                        feetSet = true;
+                        feet = parseFloat(buffer,10);
+                        buffer = '';
+                    }
                 }else{
                     buffer += c;
                 }
             }
 
             if(buffer.length > 0){
-                if(!feet){
+                if(!feetSet){
                     feet = parseFloat(buffer,10);
                 }else{
                     const n = parseFloat(buffer,10);
-                    if(!isNan(n)){
+                    console.log(n);
+                    if(!isNaN(n)){
                         inches = n;
                     }
                 }
             }
 
+            if(isNaN(feet)){
+                feet = 0;
+            }
+            
+            if(isNaN(inches)){
+                inches = 0;
+            }
+
+            calculateOutput(feet,inches);
+            const meters = (feet + (inches / 12)) * 0.3048 
+            output.value += 'Metric\n'+meters+'m';
+        }
+
+        function parseMetricInput(input){
+            Inputs.feet.value = '';
+            const meters = parseFloat(input,10);
+            calculateOutput(meters*3.28084,0);
+            output.value += 'Metric\n'+meters+'m';
+        }
+
+        function calculateOutput(feet,inches){
             feet += Math.floor(inches / 12);
             inches = inches % 12;
-
-            const n = 16;
+            const n = fractionAccuracy;
             const fr = feet % Math.floor(feet);
             inches += fr * 12.0;
             const ir = inches % Math.floor(inches);
-            output.value = `${Math.floor(feet)}' ${inches}"\n`;
+            output.value = 'Imperial\n'
+            output.value += `${Math.floor(feet)}' ${inches.toFixed(2)}"\n`;
             output.value += `${Math.floor(feet)}' ${Math.floor(inches)+decimalToFraction(ir,n)}"\n`;
-
-            console.log({feet,inches})
-        });
-
+        }
 
         const output = document.createElement('textarea');
         document.body.appendChild(output);
 
+        createInput("fraction","Fraction Size").addEventListener('input',(e) => {
+            
+            fractionAccuracy = parseInt(e.target.value,10);
+            if(Inputs.feet.value){
+                parseInputImperial(Inputs.feet.value);
+            }else if(Inputs.meters.value){
+                parseMetricInput(Inputs.meters.value);
+            }
+
+        });
+
+        Inputs.fraction.value = 16;
     </script>
 </body>
 </html>
