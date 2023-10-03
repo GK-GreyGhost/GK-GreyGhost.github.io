@@ -1,0 +1,7 @@
+{
+    "name": "Imperial Measurements",
+    "short_name": "Imperial",
+    "lang": "en-US",
+    "start_url": "/imperialMeasurements/index.html",
+    "display": "standalone"
+}

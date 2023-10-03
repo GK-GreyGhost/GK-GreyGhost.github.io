@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--Harrison Hartley / GreyGhost - Harrison@mstdn.social -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imperial Measurements - GG</title>
+    <style>
+
+        *{
+            box-sizing: border-box;
+            outline:none;
+            border-collapse: collapse;
+        }
+
+        body{
+            max-width:800px;
+            margin:auto;
+            align-items: center;
+            margin-top:calc(50vh - 162.5px);
+        }
+
+        .inputContainer input{
+            width:100%;
+            padding:10px;
+            height:100%;
+            margin:0px;
+            border:none;
+            border-left:solid 1px #000;
+        }
+
+        textarea{
+            display:block;
+            border:solid 1px #000;
+            padding:10px;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+            width:calc(100% - 10px);
+            margin:auto;
+            min-height:100px;
+        }
+
+        .inputContainer{
+            display:flex;
+            border:solid 1px #000;
+            margin:5px;
+            height:50px;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+        }
+
+        .inputContainer span{
+            display:flex;
+            width:33%;
+            align-items: center;
+            padding:10px;
+        }
+
+        @media screen and (max-width:800px){
+
+            .inputContainer input, textarea{
+                font-size:2.5em;
+            }
+
+            .inputContainer, textarea{
+                width:100%;
+                margin:0px;
+                border-left:none;
+                border-right:none;
+            }
+            textarea{
+                border-top:0px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <script>
+
+        window.onload = () => {
+            "use strict";
+
+            if ("serviceWorker" in navigator && document.URL.split(":")[0] !== "file") {
+                navigator.serviceWorker.register("./sw.js");
+            }
+        }
+
+        const Inputs = {};
+        function createInput(type,title){
+            const span = document.createElement('span');
+            span.className = 'inputContainer';
+            const text = document.createElement('span');
+            text.textContent = title || type;
+            const input = document.createElement('input');
+            //input.placeholder = title || type;
+            Inputs[type] = input;
+            span.appendChild(text);
+            span.appendChild(input);
+            document.body.appendChild(span);
+            return input;
+        }
+
+        function decimalToFraction(d,f){
+
+            //I'm sure there's a way to calculate this but I'm really tired and need to finish this in 20 minutes 
+            const larger = {
+                '8/16':'1/2',
+                '4/16':'1/4',
+                '12/16':'3/4',
+                '0/16':''
+            }
+
+            for(let i = 0; i <= f; i++){
+                if(d <= i/f){
+                    if(i === 0){
+                        return '';
+                    }
+                    const n = i+'/'+f;
+                    return ' '+(larger[n]||n);
+                }
+            }
+            return '';
+        }
+
+        createInput('feet','Feet & Inches').addEventListener('input',function(e){
+            let feet;
+            let inches = 0;
+            let buffer = '';
+
+            for(let i = 0; i < e.target.value.length; i++){
+                const c = e.target.value[i];
+                if(c === '"'){
+                    inches = parseFloat(buffer,10);
+                    buffer = '';
+                }else if(c === "'"){
+                    feet = parseFloat(buffer,10);
+                    buffer = '';
+                }else{
+                    buffer += c;
+                }
+            }
+
+            if(buffer.length > 0){
+                if(!feet){
+                    feet = parseFloat(buffer,10);
+                }else{
+                    const n = parseFloat(buffer,10);
+                    if(!isNan(n)){
+                        inches = n;
+                    }
+                }
+            }
+
+            feet += Math.floor(inches / 12);
+            inches = inches % 12;
+
+            const n = 16;
+            const fr = feet % Math.floor(feet);
+            inches += fr * 12.0;
+            const ir = inches % Math.floor(inches);
+            output.value = `${Math.floor(feet)}' ${inches}"\n`;
+            output.value += `${Math.floor(feet)}' ${Math.floor(inches)+decimalToFraction(ir,n)}"\n`;
+
+            console.log({feet,inches})
+        });
+
+
+        const output = document.createElement('textarea');
+        document.body.appendChild(output);
+
+    </script>
+</body>
+</html>
