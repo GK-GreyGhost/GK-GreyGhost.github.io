@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+        *{
+            position:relative;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            letter-spacing: 0.1em;
+            font-weight:100;
+        }
+
+        html,body{
+            width:100%;
+            height:100%;
+            margin:0px;
+            padding:0px;
+        }
+
+        body{
+            padding:25px;
+            color:#fff;
+        }
+
+        .bg{
+            width:120%;
+            height:120%;
+            position: fixed;
+            top:-10%;
+            left:-10%;
+            background:url('bg.jpg');
+            background-size:cover;
+            background-position: center center;
+            filter:brightness(0.7) blur(5px);
+        }
+
+        h1{
+            text-align: center;
+        }
+
+        .list a{
+            color:#fff;
+            text-decoration: none;
+            padding:15px;
+            display:inline-block;
+            border:solid 1px #fff;
+            display:inline-block;
+            margin:8px;
+            min-width:300px;
+            text-align:left;
+        }
+
+        .list a:hover{
+            background:rgba(255,255,255,0.25);
+        }
+
+        .horizontal-div{
+            display:flex;
+            max-width:1024px;
+            margin:auto;
+        }
+
+        .horizontal-div div{
+            width:100%;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="bg"></div>
+    <h1>Harrison Hartley / GreyGhost</h1>
+    <div class="horizontal-div">
+        <div class="list">
+            <h3>Desktop Tools</h3>
+            <a href="https://nuphy.com/products/air96-wireless-mechanical-keyboard">Keyboard - Nuphy Air96</a>
+            <a href="https://steelseries.com/gaming-mice/prime-plus">Mouse - Steel Series Prime+</a>
+            <a href="https://www.amazon.com/gp/product/B07TD94TQF/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1">Primary Monitor - LG</a>
+            <a href="https://www.amazon.com/gp/product/B00906HM6K/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1">Secondary Monitor - Asus</a>
+            <a href="#">Third Monitor - Samsung TV</a>
+            <a href="https://www.amazon.com/VILTROX-L116T-Dimmable-Bi-Color-3300K-5600K/dp/B01KZLM3QC">Desk Light - Viltrox </a>
+            <a href="https://www.ikea.com/us/en/p/elloven-monitor-stand-with-drawer-anthracite-00485101/#content">Monitor Stand - Elloven Ikea</a>
+        </div>
+        <div>
+            <h3>Software</h3>
+            
+        </div>
+        <div>
+            <h3>Drinks</h3>
+            <h4>Toluca Fog</h4>
+            <h4>Hong Kong Milk Tea</h4>
+            <h4>Matcha Latte</h4>
+        </div>
+    </div>
+
+</body>
+</html>

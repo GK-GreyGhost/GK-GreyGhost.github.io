@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy UberEats Receipts</title>
+    <style>
+
+        *{
+            position:relative;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            background:none;
+        }
+
+        body{
+            display:flex;
+        }
+
+        .input{
+         
+        }
+
+        .output{
+            border:solid 1px #ddd;
+            width:4in;
+            margin:10px;
+            padding:0px;
+
+        }
+
+        .logo{
+            max-width:50%;
+            margin:20px 0px;
+        }
+
+        .orderInfo{
+            background:#000;
+            color:#fff;
+            font-size:2em;
+            padding:10px;
+            text-align:right;
+        }
+
+        .orderNumber{
+            font-weight: 600;
+            float:left;
+        }
+
+        .orderDate{
+            padding:10px;
+        }
+
+        hr{
+            border:none;
+            border-top:solid 1px #000;
+        }
+
+        h1{
+            text-align:center;
+        }
+
+        table{
+            width:100%;
+        }
+
+        .amountPaid{
+            float:right;
+        }
+        
+        input{
+            padding:5px;
+            border:solid 1px #000;
+            display:block;
+            max-width:200px;
+            margin:5px;
+        }
+
+        .mainItem{
+            padding:10px;
+            font-size:1.5em;
+            text-transform: capitalize;
+        }
+
+        .amount{
+            float:right;
+        }
+
+        .subItem{
+            font-size:1.5em;
+            margin-left:0.4in;
+            margin-top:7.5px;
+            margin-bottom:7.5px;
+        }
+
+        .sub1{
+            text-transform: uppercase;
+        }
+
+        .sub2{
+            margin-left:0.27in;
+        }
+
+        @media print{
+            .input{
+                display:none;
+            }
+
+            .output{
+                margin-top:3in;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="input">
+        <input type="text" id="orderNumberElem" placeholder="Order Number, eg:EA437">
+        <input type="text" id="orderNameElem" placeholder="Order Name">
+        <input type="text" id="orderTimeElem" placeholder="Order Time" value="Dec. 9, 2023 11:45am">
+        <hr>
+        <div class="itemInput"></div>
+    </div>
+    <div class="output">
+        <img class="logo" src="logo.svg" alt="">
+        <div class="orderInfo">
+            <div class="orderNumber">EA437</div>
+            <div class="orderName">Michelle T.</div>
+        </div>
+        <div class="orderDate">
+            Placed at <span class="orderDateText">Dec. 9, 2023 11:45am</span>
+        </div>
+        <hr>
+        <h1>DELIVERY</h1>
+        <div class="outputContainer"></div>
+        <hr>
+        <table>
+            <tr>
+                <td>Subtotal</td><td class="subtotalOutput" style="float:right;">$117.56</td>
+            </tr>
+            <tr>
+                <td>Tax</td><td class="taxOutput" style="float:right;">$11.17</td>
+            </tr>
+            <tr style="height:40px;vertical-align: bottom;">
+                <td><b>Amount Paid</b></td>
+                <td><b class="amountPaid">$128.73</b></td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+
+        orderNumberElem.addEventListener('keyup',function(){
+            document.querySelector('.orderNumber').textContent = orderNumberElem.value;
+        },false);
+
+        orderNameElem.addEventListener('keyup',function(){
+            document.querySelector('.orderName').textContent = orderNameElem.value;
+        },false);
+
+        orderTimeElem.addEventListener('keyup',function(){
+            document.querySelector('.orderDateText').textContent = orderTimeElem.value;
+        },false);
+
+        addItemInput();
+
+        function addItemInput(){
+            const input = document.createElement('input');
+            input.placeholder = '"Item - $" OR "-subitem - $"'
+            input.className = 'itemInput';
+            document.querySelector('.itemInput').appendChild(input);
+
+            input.addEventListener('keyup',function(){
+                const allInputs = document.querySelectorAll('.itemInput');
+                if(allInputs[allInputs.length-1].value.length > 0){
+                    addItemInput();
+                }
+                recalculatePrices();
+            },false);
+        }
+
+        function recalculatePrices(){
+            let subtotal = 0;
+
+            let entries = document.querySelectorAll('.itemInput');
+
+            let output = '';
+
+            for( let i= 0; i < entries.length; i++){
+                const e = entries[i];
+                const text = e.value || '';
+                if(text.length === 0){
+                    continue;
+                }
+                const parts = text.split('-');
+                let amount = parts.pop();
+                subtotal += parseFloat(amount,10.0);
+
+                if(text[0] === '-'){
+                    output += `<div class='subItem'> <div class='sub1'>${parts[1].trim()}</div><span class='sub2'>${parts[2]||''}</span><span class='amount'>$${amount.trim()}</span></div>`;
+                }else{
+                    output += `<div class='mainItem'><b>${parts.join('-')}</b><span class='amount'>$${amount.trim()}</span></div>`;
+                }
+            }
+
+            document.querySelector('.outputContainer').innerHTML = output;
+
+            let tax = subtotal * 0.0725;
+            let total = subtotal + tax;
+
+            document.querySelector('.subtotalOutput').textContent = '$'+subtotal.toFixed(2);
+            document.querySelector('.taxOutput').textContent = '$'+tax.toFixed(2);
+            document.querySelector('.amountPaid').textContent = '$'+total.toFixed(2);
+            
+        }
+
+    </script>
+</body>
+</html>
