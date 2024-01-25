@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+        *{
+            border-collapse: collapse;
+            box-sizing: border-box;
+        }
+        td input{
+            width:100%;
+            height:100%;
+            padding:5px;
+            margin:0px;
+            border:none;
+        }
+        table,tr,td{
+            border:solid 1px #000;
+        }
+
+        table{
+            margin:0px;
+            padding:0px;
+        }
+
+        html,body{
+            padding:0px;
+            margin:0px;
+        }
+
+        input{
+            min-width:100px;
+            outline:none;
+        }
+    </style>
+</head>
+<body>
+    <script>
+    
+        const table = document.createElement('table');
+        document.body.appendChild(table);
+
+        let db = {};
+        if(localStorage.sheets){
+            db = JSON.parse(localStorage.sheets);
+        }
+
+        for(let i = 0; i < 256; i++){
+            addLine(i);
+        }
+
+        function addLine(y){
+            const line = document.createElement('tr');
+            for(let i = 0; i < 32; i++){
+                const data = document.createElement('td');
+                const input = document.createElement('input');
+                data.appendChild(input)
+                line.appendChild(data);
+                const id = 'id-'+i+'-'+y;
+                data.className = id;
+                input.value = db[id] || '';
+                data.addEventListener('keydown',function(){
+                    db[id] = input.value;
+                    localStorage.sheets = JSON.stringify(db);
+                },false)
+            }
+            table.appendChild(line);
+
+        }
+    
+    </script>
+</body>
+</html>
