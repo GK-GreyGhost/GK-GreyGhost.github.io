@@ -12,6 +12,10 @@
             font-family: monospace;
         }
 
+        p, div{
+            line-height: 1.5em;
+        }
+
         button{
             margin:5px;
             padding:10px;
@@ -83,6 +87,191 @@
 
         function updateDisplay(){
             display.textContent = `${area} - Wave: ${wave}`;
+        }
+
+        const items = {
+            equipment:{
+                Sword:{
+                    stats:"D6",
+                    special:"",
+                    cost:30,
+                    sell:15
+                },
+                Dagger:{
+                    stats:"D4",
+                    special:"Move +1",
+                    cost:16,
+                    sell:8
+                },
+                Bow:{
+                    stats:"D6, Range 3",
+                    special:"Uses arrows, can retrieve, comes with 3 arrows",
+                    cost:40,
+                    sell:20
+                },
+                Shield:{
+                    stats:"Armor +2",
+                    special:"Counter: if 1H in other hand, D4>2, Attack Attacker",
+                    cost:30,
+                    sell:15
+                },
+                Spear:{
+                    stats:"D6, Range 2, Pierce",
+                    special:"Throw: Range 3, can retrieve, Damage +2",
+                    cost:24,
+                    sell:12
+                },
+                Whip:{
+                    stats:"D8, Range 2",
+                    special:"Will Damage +2",
+                    cost:40,
+                    sell:20
+                },
+                Great_Sword:{
+                    stats:"D12, Knockback +1",
+                    special:"Move -1",
+                    cost:80,
+                    sell:40
+                },
+                Great_Shield:{
+                    stats:"Armor +3",
+                    special:"Move -1",
+                    cost:80,
+                    sell:40
+                },
+                Axe:{
+                    stats:"D8",
+                    special:"",
+                    cost:30,
+                    sell:15
+                },
+                Great_Axe:{
+                    stats:"D20, Knockback +1",
+                    special:"Move -2, Two Handed",
+                    cost:0,
+                    sell:0
+                },
+                Scythe:{
+                    stats:"D8, Pierce",
+                    special:"3 Targets in row, Two Handed, Catalyst",
+                    cost:60,
+                    sell:30
+                },
+                Hammer:{
+                    stats:"D12, Knockback +3",
+                    special:"Move -1",
+                    cost:50,
+                    sell:25
+                },
+                Crossbow:{
+                    stats:"D12, Range 4",
+                    special:"uses bolts, can retrieve, comes with 3 bolts",
+                    cost:80,
+                    sell:40
+                },
+                Bolt_Action_Rifle:{
+                    stats:"D20, Range 8",
+                    special:"consumes 1 bullet, must reload after shot (consumes turn)",
+                    cost:120,
+                    sell:60
+                },
+                Revolver:{
+                    stats:"D12, Range 4",
+                    special:"consumes 1 bullet, must reload after 6 shots (consumes turn)",
+                    cost:140,
+                    sell:70
+                },
+                Claws:{
+                    stats:"2D6",
+                    special:"Move +1",
+                    cost:40,
+                    sell:20
+                },
+                Grimoire:{
+                    stats:"D4 / 2",
+                    special:"Spell Damage +2, has 2 random spells on pickup, Catalyst",
+                    cost:-1,
+                    sell:300
+                },
+                Iron_Gauntlets:{
+                    stats:"2D4",
+                    special:"Move +1, Grab Ability: D6 > target move - target weight, throw to any nearby tile",
+                    cost:40,
+                    sell:20
+                }
+            },
+            items:{
+                Health_Potion:{
+                    type:"Consumable",
+                    effect:"Heal +5",
+                    cost:5,
+                    sell:5
+                },
+                Arrow_x_3:{
+                    type:"Ammo",
+                    effect:"Reusable, Enchantable",
+                    cost:5,
+                    sell:2
+                },
+                Bullet_x_3:{
+                    type:"Ammo",
+                    effect:"Not Enchantable",
+                    cost:5,
+                    sell:2
+                },
+                Poison:{
+                    type:"Consumable",
+                    effect:"Apply to Sharp Weapon / Arrow / Bait, +2 Damage on targets with flesh for next 3 turns"
+                },
+                Bait:{
+                    type:"Consumable",
+                    effect:"Lure enemy to location, works with traps and poison",
+                    cost:5,
+                    sell:2.5
+                },
+                Anchor_Trap:{
+                    type:"Trap",
+                    effect:"D4 > 1 Enemy is trapped for 2 turns",
+                    cost:10,
+                    sell:5
+                },
+                Bomb_Trap:{
+                    type:"Trap",
+                    effect:"D8 to tile and nearby surrounding tiles",
+                    cost:20,
+                    sell:10
+                },
+                Sleep_Trap:{
+                    type:"Trap",
+                    effect:"D4 > 1 puts living enemies to sleep",
+                    cost:10,
+                    sell:5
+                },
+                Whiskey:{
+                    type:"Consumable",
+                    effect:"increase max health by 5 for 3 turns, -1 to dodge rolls",
+                    cost:15,
+                    sell:10
+                },
+                Gas_Mask:{
+                    type:"Equipable (Head)",
+                    effect:"grants resistance to Sleep trap, Gas and Smells",
+                    cost:30,
+                    sell:15
+                },
+                Basic_Armor:{
+                    type:"Equipable (Body)",
+                    effect:"Armor +1",
+                    cost:50,
+                    sell:25
+                },
+                Full_Plate_Armor:{
+                    type:"Equipable (Body)",
+                    effect:"Armor +2, Move -1",
+                    cost:80,
+                    sell:40
+                }
+            }
         }
 
         const monsters = {
@@ -163,7 +352,24 @@
             monsterRollOut.innerHTML = '<hr/>';
 
             if(wave % 5 === 0){
-                monsterRollOut.innerHTML += '<h3>Traveling Merchant</h3> Anything of interest? <br/><hr/>'
+                monsterRollOut.innerHTML += '<h3>Traveling Merchant</h3> Anything of interest? <br/><br/>';
+
+                for(let i = 0; i < 4; i++){
+                    const d = d4();
+                    if(d === 0 || d === 1){
+                        let keys = Object.keys(items.items);
+                        const key = keys[Math.floor(Math.random()*keys.length)]
+                        const item = items.items[key];
+                        monsterRollOut.innerHTML += `<b>${key}</b> ${item.type}, ${item.effect} - ${item.cost} / ${item.sell}<br/>`;
+                    }else{
+                        let keys = Object.keys(items.equipment);
+                        const key = keys[Math.floor(Math.random()*keys.length)]
+                        const item = items.equipment[key];
+                        monsterRollOut.innerHTML += `<b>${key}</b> ${item.stats}, ${item.special} - ${item.cost} / ${item.sell}<br/>`;
+                    }
+                }
+
+                monsterRollOut.innerHTML += "<hr/>";
             }
             let first = true;
             let cc = wave;
