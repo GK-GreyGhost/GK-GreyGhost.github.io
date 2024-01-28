@@ -52,6 +52,13 @@
             addLine(i);
         }
 
+        function focus(x,y){
+            const elem = document.querySelector('.did-'+x+'-'+y);
+            if(elem){
+                elem.focus();
+            }
+        }
+
         function addLine(y){
             const line = document.createElement('tr');
             for(let i = 0; i < 32; i++){
@@ -62,13 +69,26 @@
                 const id = 'id-'+i+'-'+y;
                 data.className = id;
                 input.value = db[id] || '';
-                data.addEventListener('keydown',function(){
+                input.className = 'd'+id;
+                data.addEventListener('change',function(){
                     db[id] = input.value;
                     localStorage.sheets = JSON.stringify(db);
+                })
+                data.addEventListener('keydown',function(e){
+                    if(e.altKey){
+                        if(e.key === 'ArrowUp' || e.key === 'w'){
+                            focus(i,y-1,e);
+                        }else if(e.key === 'ArrowDown' || e.key === 's'){
+                            focus(i,y+1,e);
+                        }else if(e.key === 'ArrowRight' || e.key === 'd'){
+                            focus(i+1,y,e);
+                        }else if(e.key === 'ArrowLeft' || e.key === 'a'){
+                            focus(i-1,y,e);
+                        }   
+                    }
                 },false)
             }
             table.appendChild(line);
-
         }
     
     </script>

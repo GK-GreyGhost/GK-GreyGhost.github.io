@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="dropContainer" style="border:1px solid black;height:100px;">
+        Drop Here
+     </div>
+       Should update here:
+       <input type="file" id="fileInput" />
+    <script>
+        
+        dropContainer.ondragover = dropContainer.ondragenter = function(evt) {
+            evt.preventDefault();
+            return false;
+        };
+
+        dropContainer.ondrop = function(evt) {
+            
+            for(let i = 0; i < evt.dataTransfer.files.length; i++){
+                const reader = new FileReader();
+                reader.onload = function(e){
+                    const img = new Image();
+                    img.onload = function(){
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        document.body.appendChild(canvas);
+                        
+                    }
+                    img.src = e.target.result;
+                    document.body.appendChild(img);
+                }
+                reader.readAsDataURL(evt.dataTransfer.files[i]);
+            }
+
+            evt.preventDefault();
+            return false;
+        };
+
+        window.addEventListener("dragover",function(e){
+            e = e || event;
+            e.preventDefault();
+        },false);
+        window.addEventListener("drop",function(e){
+            e = e || event;
+            e.preventDefault();
+        },false);
+
+    </script>
+</body>
+</html>

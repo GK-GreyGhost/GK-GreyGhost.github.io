@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Labyrinth of Tolgarith</title>
+    <style>
+        *{
+            box-sizing: border-box;
+            margin:auto;
+            position:relative;
+            font-family: monospace;
+        }
+
+        button{
+            margin:5px;
+            padding:10px;
+            border:none;
+            background:#000;
+            color:#fff;
+        }
+        body,p{
+            margin:25px;
+        }
+
+        hr{
+            margin:20px 0px;
+            border:none;
+            border-bottom:solid 1px #000;
+        }
+        h2{
+            margin:10px 0px;
+            position:fixed;
+            bottom:10px;
+            right:25px;
+            opacity:0.25;
+        }
+    </style>
+</head>
+<body>
+    <h2>The Labyrinth of Tolgarith</h2>
+    <script>
+        
+        let wave = 0;
+        const area = 'Forest';
+
+        const display = document.createElement('p');
+
+        updateDisplay();
+        
+        function rand(n){
+            return Math.floor(Math.random() * n);
+        }
+
+        function d4(){
+            return rand(4);
+        }
+
+        function d6(){
+            return rand(6);
+        }
+
+        function d8(){
+            return rand(8);
+        }
+
+        function d12(){
+            return rand(12);
+        }
+
+        function d20(){
+            return rand(20);
+        }
+
+        const monsterRoll = document.createElement('button');
+        document.body.appendChild(monsterRoll);
+        monsterRoll.textContent = 'Turn';
+        
+        document.body.appendChild(display);
+
+        const monsterRollOut = document.createElement('p');
+        document.body.appendChild(monsterRollOut);
+
+        function updateDisplay(){
+            display.textContent = `${area} - Wave: ${wave}`;
+        }
+
+        const monsters = {
+            Forest:{
+                Zombie:{
+                    move:1,
+                    armor:3,
+                    int:"Dumb",
+                    attack:"D4",
+                    cost:1
+                },
+                Wolf:{
+                    move:3,
+                    armor:2,
+                    int:"Dumb",
+                    attack:"D6",
+                    cost:3
+                },
+                Orc:{
+                    move:2,
+                    armor:3,
+                    int:"Mid",
+                    attack:"D6",
+                    cost:3
+                },
+                Golem:{
+                    move:1,
+                    armor:4,
+                    int:"Dumb",
+                    attack:"D12",
+                    cost:3
+                },
+                Skeleton_Warrior:{
+                    move:2,
+                    armor:2,
+                    int:"Dumb",
+                    attack:"D4",
+                    cost:2
+                },
+                Skeleton_Archer:{
+                    move:1,
+                    armor:2,
+                    int:"Smart",
+                    attack:"D6 R3",
+                    cost:3
+                }
+            }
+        }
+
+        function monsterStats(monster){
+            monster = monster.replace(' ','_');
+            for(let key in monsters){
+                if(monsters[key][monster]){
+                    const data = monsters[key][monster];
+                    return `<h3>${monster.replace('_',' ')}</h3> Armor ${data.armor},  Move ${data.move}, Attack ${data.attack}, ${data.int}`;
+                }
+            }
+        }
+
+        function getMonster(monster){
+            monster = monster.replace(' ','_');
+            for(let key in monsters){
+                if(monsters[key][monster]){
+                    return monsters[key][monster];
+                }
+            }
+        }
+
+        monsterRoll.addEventListener('mousedown',nextTurn,false);
+        nextTurn();
+
+        function nextTurn(){
+            wave += 1
+            const areas = {
+                forest:['Zombie','Wolf','Orc','Golem','Skeleton Warrior','Skeleton Archer'],
+            }
+
+            monsterRollOut.innerHTML = '<hr/>';
+
+            if(wave % 5 === 0){
+                monsterRollOut.innerHTML += '<h3>Traveling Merchant</h3> Anything of interest? <br/><hr/>'
+            }
+            let first = true;
+            let cc = wave;
+            while(cc >= 0){
+                let next = areas.forest[d6()];
+                const monster = getMonster(next);
+                if(cc - monster.cost >= 0  || first){
+                    first = false;
+                    let position = [d4()+1,d4()+1,d4()+1];
+                    monsterRollOut.innerHTML += `${monsterStats(next)} <br/> Position ${position[0]},${position[1]},${position[2]}<br/><br/>`;
+                }
+                cc -= monster.cost;
+            }
+
+            updateDisplay();
+        }
+
+    </script>
+</body>
+</html>
