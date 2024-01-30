@@ -3,15 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Annotate</title>
+    <style>
+        
+        *{
+            position:relative;
+            margin:0px;
+            box-sizing: border-box;
+            font-family:helvetica;
+            text-transform: uppercase;
+        }
+
+        body{
+            background:#222;
+        }
+        
+        #fileInput{
+            display:none;
+        }
+        
+        #dropContainer{
+            position:fixed;
+            top:0px;
+            left:0px;
+            width:100%;
+            height:100%;
+        }
+
+        #dropContainer:after{
+            content:"Drop file here";
+            position:fixed;
+            top:0px;
+            left:0px;
+            right:0px;
+            bottom:0px;
+            font-size:4em;
+            opacity:0.25;
+            margin:auto;
+            color:#fff;
+            height:40px;
+            text-align:center;
+        }
+
+        .lineContainer{
+            padding:10px;
+            margin:10px;
+            position:fixed;
+            top:0px;
+            left:0px;
+            background:#fff;
+            overflow:hidden;
+            width:50px;
+            height:50px;
+            border-radius:100px;
+            border:solid 1px #000;
+        }
+
+        input{
+            outline:none;
+            border:solid 1px #000;
+            padding:5px;
+        }
+
+        .lineContainer:hover{
+            opacity:1.0;
+            width:auto;
+            height:auto;
+            border-radius:0px;
+
+        }
+
+        .lineContainer div, .lineContainer input{
+            padding:2px;
+            margin:2px;
+        }
+
+    </style>
 </head>
 <body>
-    <div id="dropContainer" style="border:1px solid black;height:100px;">
-        Drop Here
-     </div>
-       Should update here:
+    <div id="dropContainer"></div>
        <input type="file" id="fileInput" />
     <script>
+        let Mouse = {x:0,y:0};
         
         dropContainer.ondragover = dropContainer.ondragenter = function(evt) {
             evt.preventDefault();
@@ -25,14 +98,129 @@
                 reader.onload = function(e){
                     const img = new Image();
                     img.onload = function(){
+                        dropContainer.remove();
+
                         const canvas = document.createElement('canvas');
                         canvas.width = img.width;
                         canvas.height = img.height;
                         document.body.appendChild(canvas);
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img,0,0);
+                        ctx.font = '50px ariel';
+                        ctx.textAlign = 'center';
+                        const lineContainer = document.createElement('div');
+                        lineContainer.className = 'lineContainer';
+                        document.body.appendChild(lineContainer);
+                        let boundingBoxes = [];
+                        addLine();
                         
+                        let selected;
+                        
+                        function addLine(){
+
+                            const div = document.createElement('div');
+                            lineContainer.appendChild(div);
+
+                            const input = document.createElement('input');
+                            div.appendChild(input);
+                            
+                            const position = document.createElement('input');
+                            position.value = (Math.random() * img.width).toFixed(2) + ' ' + (Math.random() * img.height).toFixed(2);
+                            position.addEventListener('keyup',redraw);
+                            
+                            div.appendChild(position);
+
+                            const font = document.createElement('input');
+                            font.value = 'bold 50px ariel';
+                            font.addEventListener('keyup',redraw);
+
+                            div.appendChild(font);
+
+                            const color = document.createElement('input');
+                            color.addEventListener('keyup',redraw);
+                            color.value = '#777';
+                            div.appendChild(color);
+
+                            input.addEventListener('keyup',function(){
+                                redraw();
+                                if(lineContainer.lastChild.children[0] == input){
+                                    addLine();
+                                }
+                            },false);
+
+                            redraw();
+                        }
+
+                        canvas.addEventListener('mousedown',function(e){
+                            const x = e.pageX;
+                            const y = e.pageY;
+                            Mouse.x = x;
+                            Mouse.y = y;
+
+                            for(let box of boundingBoxes){
+                                if(x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height){
+                                    selected = box;
+                                }
+                            }
+                        },false);
+
+                        canvas.addEventListener('mousemove',function(e){
+
+                            const x = e.pageX;
+                            const y = e.pageY;
+                            Mouse.x = x;
+                            Mouse.y = y;
+
+                            if(!selected){
+                                return;
+                            }
+ 
+                            selected.positionElem.value = x + ' ' + y;
+                            redraw();
+
+                        },false);
+
+                        canvas.addEventListener('mouseup',function(){
+                            selected = false;
+                        },false);
+
+                        function redraw(){
+                            boundingBoxes = [];
+                            ctx.drawImage(img,0,0);
+                            ctx.fillStyle = 'red';
+                            //ctx.fillRect(Mouse.x-5,Mouse.y-5,10,10);
+                            for(let item of lineContainer.children){
+                                
+                                const position = item.children[1].value.split(' ');
+                                
+                                const x = parseFloat(position[0],10);
+                                const y = parseFloat(position[1],10);
+
+                                ctx.font = item.children[2].value;
+                                ctx.fillStyle = item.children[3].value;
+                                ctx.fillText(item.children[0].value,x,y);
+                                
+                                const metrics = ctx.measureText(item.children[0].value);
+                                const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+                                const width = metrics.width;
+
+                                boundingBoxes.push({
+                                    x,y:y-height,width,height,element:item,positionElem:item.children[1]
+                                });
+                            }
+                            /*
+                            ctx.lineWidth = 3;
+                            ctx.strokeStyle = 'red';
+                            for(let box of boundingBoxes){
+                                ctx.strokeRect(box.x,box.y,box.width,box.height);
+                            }
+                            */
+
+                        }
+
                     }
                     img.src = e.target.result;
-                    document.body.appendChild(img);
                 }
                 reader.readAsDataURL(evt.dataTransfer.files[i]);
             }

@@ -27,6 +27,10 @@
             margin:25px;
         }
 
+        body{
+            text-align:left;
+        }
+
         hr{
             margin:20px 0px;
             border:none;
@@ -39,14 +43,202 @@
             right:25px;
             opacity:0.25;
         }
+
+        tr,td,table{
+            border:solid 2px #000;
+            border-collapse: collapse;
+        }
+
+        table{
+            text-align:center;
+            position:absolute;
+            top:0px;
+            left:0px;
+            right:0px;
+            bottom:0px;
+            margin:1in 0.5in;    
+        }
+
+        td{
+            aspect-ratio: 1;
+            width:0.9in;
+            height:0.9in;
+            font-size:40px;
+            text-align:center;
+        }
+
+        .page{
+            position:relative;
+            width:8.5in;
+            height:11in;
+            border:solid 1px #000;
+        }
+
+        .hpContainer{
+            display:flex;
+            width:fit-content;
+        }
+
+        .hpContainer button{
+            background:hsl(0,50%,50%);
+        }
+
+        #optionsContainer{
+            display:flex;
+            margin:auto 0px 0px 0px;
+            text-align:left;
+            width:fit-content;
+        }
+
+        .gold{
+            height:37px;
+            padding:5px;
+            outline:none;
+            margin:5px;
+            text-align:center;
+            border:solid 1px #000;
+        }
+
+        .inventory{
+            display:flex;
+            float:right;
+            height:800px;
+            width:200px;
+            outline:none;
+            padding:10px;
+        }
+
     </style>
 </head>
 <body>
+
+
     <h2>The Labyrinth of Tolgarith</h2>
+    <!--
+    <div class="page">
+    <table>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </table>
+    -->
+    <div id="optionsContainer"></div>
+</div>
     <script>
         
+        const inventory = document.createElement('textarea');
+        document.body.appendChild(inventory);
+        inventory.className = 'inventory';
+
+        inventory.addEventListener('keyup',function(){
+            localStorage.inventory = inventory.value;
+        },false);
+
+        inventory.value = localStorage.inventory || '';
+
+        let hp = 10;
+        let maxHP = 10;
+        const hpDisplay = document.createElement('canvas');
+        hpDisplay.width = 300;
+        hpDisplay.height = 37;
+        const hpContainer = document.createElement('div');
+
+        hpContainer.className = 'hpContainer';
+
+        
+        const hpUp = document.createElement('button');
+        hpUp.textContent = '>'
+        hpUp.addEventListener('mousedown',function(){
+            hp += 1;
+            if(hp > maxHP){
+                hp = maxHP;
+            }
+            updateHPDisplay();
+        })
+
+        const hpDown = document.createElement('button');
+        hpDown.textContent = '<'
+        hpDown.addEventListener('mousedown',function(){
+            hp -= 1;
+            if(hp < 0){
+                hp = 0;
+            }
+            updateHPDisplay();
+        })
+
+
+        const maxHPUp = document.createElement('button');
+        maxHPUp.textContent = '>>'
+        maxHPUp.addEventListener('mousedown',function(){
+            maxHP += 1;
+            hp += 1;
+            updateHPDisplay();
+        })
+
+        const maxHPDown = document.createElement('button');
+        maxHPDown.textContent = '<<'
+        maxHPDown.addEventListener('mousedown',function(){
+            maxHP -= 1;
+            if(maxHP < 1){
+                maxHP = 1;
+            }
+            if(maxHP < hp){
+                hp = maxHP;
+            }
+            updateHPDisplay();
+        })
+
+        hpContainer.appendChild(maxHPDown)        
+        hpContainer.appendChild(hpDown)        
+        hpContainer.appendChild(hpDisplay);
+        hpContainer.appendChild(hpUp)        
+        hpContainer.appendChild(maxHPUp)      
+        
+        updateHPDisplay();
+
+        const gold = document.createElement('input');
+        gold.className = 'gold';
+        gold.placeholder = "Gold";
+
+        
+
+        gold.addEventListener('focus',function(){
+            gold.value = gold.value.split('gold').join('').trim()
+            gold.select();
+        },false);
+
+        gold.addEventListener('blur',function(){
+            gold.value = gold.value.trim() + ' gold';
+            localStorage.gold = gold.value;
+        },false);
+
+        gold.value = localStorage.gold || "0 gold";
+
+        function updateHPDisplay(){
+            const ctx = hpDisplay.getContext('2d');
+            ctx.clearRect(0,0,hpDisplay.width,hpDisplay.height);
+            const step = hpDisplay.width/maxHP;
+            ctx.strokeStyle = ctx.fillStyle = 'hsl(0,50%,50%)'
+            ctx.lineWidth = 2;
+            ctx.save();
+            for(let i = 0; i < maxHP; i++){
+                ctx.strokeRect(step*i,0,step,hpDisplay.height);
+            }
+            for(let i = 0; i < hp; i++){
+                ctx.fillRect(step*i+4,4,step-8,hpDisplay.height-8);
+            }
+            ctx.restore();
+        }
+
+        const tileOptions = "🐻🪨🎁🦇🕷️🦂";
+
         let wave = 0;
-        const area = 'Forest';
+        let area = 'Forest';
 
         const display = document.createElement('p');
 
@@ -77,8 +269,12 @@
         }
 
         const monsterRoll = document.createElement('button');
-        document.body.appendChild(monsterRoll);
-        monsterRoll.textContent = 'Turn';
+        optionsContainer.appendChild(monsterRoll);
+
+        optionsContainer.appendChild(hpContainer);
+
+        optionsContainer.appendChild(gold);
+        monsterRoll.textContent = 'Next Turn';
         
         document.body.appendChild(display);
 
@@ -88,6 +284,8 @@
         function updateDisplay(){
             display.textContent = `${area} - Wave: ${wave}`;
         }
+
+
 
         const items = {
             equipment:{
@@ -318,6 +516,50 @@
                     attack:"D6 R3",
                     cost:3
                 }
+            },
+            Caves:{
+                Slime:{
+                    move:2,
+                    armor:4,
+                    int:"Dumb",
+                    attack:"D4",
+                    cost:1
+                },
+                Bat:{
+                    move:4,
+                    armor:1,
+                    int:"Dumb",
+                    attack:"D6",
+                    cost:2
+                },
+                Goblin_Archer:{
+                    move:2,
+                    armor:2,
+                    int:"Dumb",
+                    attack:"D6 R3",
+                    cost:1
+                },
+                Necromancer:{
+                    move:2,
+                    armor:4,
+                    int:"Smart",
+                    attack:"Raise Undead; Vampiric Touch; D4",
+                    cost:4
+                },
+                Werewolf:{
+                    move:4,
+                    armor:4,
+                    int:"Dumb",
+                    attack:"D8",
+                    cost:5
+                },
+                Goblin_Medic:{
+                    move:3,
+                    armor:2,
+                    int:"Smart",
+                    attack:"Healing Touch; D6",
+                    cost:3
+                }
             }
         }
 
@@ -345,8 +587,15 @@
 
         function nextTurn(){
             wave += 1
+            if(wave > 10){
+                wave = 1;
+                area = 'Caves';
+            }
+
+
             const areas = {
-                forest:['Zombie','Wolf','Orc','Golem','Skeleton Warrior','Skeleton Archer'],
+                Forest:Object.keys(monsters.Forest),
+                Caves:Object.keys(monsters.Caves),
             }
 
             monsterRollOut.innerHTML = '<hr/>';
@@ -374,7 +623,7 @@
             let first = true;
             let cc = wave;
             while(cc >= 0){
-                let next = areas.forest[d6()];
+                let next = areas[area][d6()];
                 const monster = getMonster(next);
                 if(cc - monster.cost >= 0  || first){
                     first = false;
