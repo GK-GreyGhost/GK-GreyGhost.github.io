@@ -12,6 +12,13 @@
             font-family: monospace;
         }
 
+
+        html,body{
+            margin:0px;
+            width:100%;
+            height:100%;
+        }
+
         p, div{
             line-height: 1.5em;
         }
@@ -23,7 +30,8 @@
             background:#000;
             color:#fff;
         }
-        body,p{
+        
+        p{
             margin:25px;
         }
 
@@ -36,7 +44,8 @@
             border:none;
             border-bottom:solid 1px #000;
         }
-        h2{
+
+        h1{
             margin:10px 0px;
             position:fixed;
             bottom:10px;
@@ -45,32 +54,25 @@
         }
 
         tr,td,table{
-            border:solid 2px #000;
+            border:solid 1px #000;
             border-collapse: collapse;
         }
 
         table{
-            text-align:center;
-            position:absolute;
-            top:0px;
-            left:0px;
-            right:0px;
-            bottom:0px;
-            margin:1in 0.5in;    
+            margin:10px;
         }
 
         td{
-            aspect-ratio: 1;
-            width:0.9in;
-            height:0.9in;
-            font-size:40px;
-            text-align:center;
+            padding:5px;
+
         }
 
         .page{
-            position:relative;
-            width:8.5in;
-            height:11in;
+            padding:10px;
+            margin:10px;
+            display:block;
+            width:calc(100% - 20px);
+            height:90%;
             border:solid 1px #000;
         }
 
@@ -85,7 +87,7 @@
 
         #optionsContainer{
             display:flex;
-            margin:auto 0px 0px 0px;
+            margin:10px;
             text-align:left;
             width:fit-content;
         }
@@ -108,12 +110,52 @@
             padding:10px;
         }
 
+        tr:nth-child(1){
+            font-weight: bold;
+        }
+
+        @media print{
+            #optionsContainer{
+                display:none;
+            }
+
+            .page{
+
+                width:8.5in;
+                height:11in;
+                border:none;
+                padding:auto;
+                margin:auto;
+            }
+
+            td{
+                font-size:8px;
+            }
+            
+            table,tr,td{
+                border:solid 1px #000 !important;
+            }
+
+            table{
+                margin:25px;
+            }
+
+            h2{
+                font-size:16px;
+                margin:25px;
+            }
+
+            .noprint{
+                display:none;
+            }
+        }
+
     </style>
 </head>
 <body>
 
 
-    <h2>The Labyrinth of Tolgarith</h2>
+    <h1>The Labyrinth of Tolgarith</h1>
     <!--
     <div class="page">
     <table>
@@ -133,7 +175,7 @@
         
         const inventory = document.createElement('textarea');
         document.body.appendChild(inventory);
-        inventory.className = 'inventory';
+        inventory.className = 'inventory noprint';
 
         inventory.addEventListener('keyup',function(){
             localStorage.inventory = inventory.value;
@@ -150,7 +192,6 @@
 
         hpContainer.className = 'hpContainer';
 
-        
         const hpUp = document.createElement('button');
         hpUp.textContent = '>'
         hpUp.addEventListener('mousedown',function(){
@@ -204,8 +245,6 @@
         const gold = document.createElement('input');
         gold.className = 'gold';
         gold.placeholder = "Gold";
-
-        
 
         gold.addEventListener('focus',function(){
             gold.value = gold.value.split('gold').join('').trim()
@@ -276,16 +315,103 @@
         optionsContainer.appendChild(gold);
         monsterRoll.textContent = 'Next Turn';
         
-        document.body.appendChild(display);
+        const page = document.createElement('div');
+        page.className = 'page noprint';
+        document.body.appendChild(page);
+
+        page.appendChild(display);
 
         const monsterRollOut = document.createElement('p');
-        document.body.appendChild(monsterRollOut);
+        page.appendChild(monsterRollOut);
+        
+
+        function renderInventory(){
+            const page = document.createElement('page');
+            page.className = 'page';
+            document.body.appendChild(page);
+
+            function elem(n){
+                const e = document.createElement(n);
+                page.appendChild(e);
+                return e;
+            }
+
+
+            page.appendChild(tableify(items.equipment,'Equipment'))
+
+            page.appendChild(tableify(items.items,'Item'))
+
+            const page2 = document.createElement('page');
+            page2.className = 'page';
+            document.body.appendChild(page2);
+
+            const columns = ['armor','move','attack','int','cost','roll'];
+            page2.appendChild(tableify(monsters.Forest,'Area 1 - Forest',columns,'monsterList'));
+            page2.appendChild(tableify(monsters.Caves,'Area 2 - Caves',columns,'monsterList'));
+            page2.appendChild(tableify(monsters.Village,'Area 3 - Village',columns,'monsterList'));
+
+            const page3 = document.createElement('page');
+            page3.className = 'page';
+            document.body.appendChild(page3);
+            page3.appendChild(tableify(items.Abilities,'Ability'));
+        }
+
+        Array.prototype.push_unique = function(n){
+            if(!this.includes(n)){
+                this.push(n);
+            }
+        }
+
+        function tableify(obj,title,columns=[],className=''){
+            if(columns.length === 0){
+                for(let key in obj){
+                    for(let sub in obj[key]){
+                        columns.push_unique(sub);
+                    }
+                }
+            }
+
+            const table = document.createElement('table');
+            
+            const tr = document.createElement('tr');
+            table.appendChild(tr);
+
+            const td = document.createElement('td');
+            td.textContent = title;
+            tr.appendChild(td);
+
+            for(let item of columns){
+                const td = document.createElement('td');
+                td.textContent = item;
+                tr.appendChild(td);
+            }
+
+            for(let key in obj){
+                const tr = document.createElement('tr');
+                table.appendChild(tr);
+
+                const td = document.createElement('td');
+                td.textContent = key;
+                tr.appendChild(td);
+
+                for(let item of columns){
+                    const td = document.createElement('td');
+                    td.textContent = obj[key][item] || '';
+                    tr.appendChild(td);
+                }
+
+            }
+
+            table.className = className;
+
+            return table;
+
+        }
+
 
         function updateDisplay(){
             display.textContent = `${area} - Wave: ${wave}`;
         }
-
-
 
         const items = {
             equipment:{
@@ -330,6 +456,18 @@
                     special:"Move -1",
                     cost:80,
                     sell:40
+                },
+                Wand:{
+                    stats:"D4 / 2",
+                    special:"Spell Damage + 2, Catalyst",
+                    cost:90,
+                    sell:45
+                },
+                Staff:{
+                    stats:"D4",
+                    special:"Spell Damage + 4, Catalyst, 2 Hand	",
+                    cost:90,
+                    sell:45
                 },
                 Great_Shield:{
                     stats:"Armor +3",
@@ -429,19 +567,19 @@
                 },
                 Anchor_Trap:{
                     type:"Trap",
-                    effect:"D4 > 1 Enemy is trapped for 2 turns",
+                    effect:"D4 > 1 Enemy is trapped for 2 turns, explodes when stepping off",
                     cost:10,
                     sell:5
                 },
                 Bomb_Trap:{
                     type:"Trap",
-                    effect:"D8 to tile and nearby surrounding tiles",
+                    effect:"D8 to tile and nearby surrounding tiles, explodes when stepping off",
                     cost:20,
                     sell:10
                 },
                 Sleep_Trap:{
                     type:"Trap",
-                    effect:"D4 > 1 puts living enemies to sleep",
+                    effect:"D4 > 1 puts living enemies to sleep, explodes when stepping off",
                     cost:10,
                     sell:5
                 },
@@ -469,6 +607,88 @@
                     cost:80,
                     sell:40
                 }
+            },
+            Abilities:{
+                Fireball:{
+                    cooldown:1,
+                    ability:"D6 R3, Fire Damage, hits all nearby squares"
+                },
+                Raise_Dead:{
+                    cooldown:2,
+                    ability:"Corpse + D4 > 1, raise Controllable Zombie"
+                },
+                Chilling_Touch:{
+                    cooldown:1,
+                    ability:"Target has half movement speed for 2 turns"
+                },
+                Draining_Kiss:{
+                    cooldown:1,
+                    ability:"D6, caster gains damage as health; if target tranced, target loses next turn"
+                },
+                Trance:{
+                    cooldown:2,
+                    ability:"R2 target involuntarily moves towards caster for 2 turns and cannot attack caster, ends early if target is hurt"
+                },
+                Howl:{
+                    cooldown:2,
+                    ability:"R2 Allies gain +2 Damage for 1 turn"
+                },
+                Blink:{
+                    cooldown:3,
+                    ability:"teleport R5, if D4 > 3 can go through walls, otherwise end at wall"
+                },
+                Blessing:{
+                    cooldown:3,
+                    ability:"R3 Heal target for D6, if target doesn't have health, give 1 hp barrier"
+                },
+                Twist_Stone:{
+                    cooldown:3,
+                    ability:"Create Stone or Remove Stone"
+                },
+                Reflect:{
+                    cooldown:3,
+                    ability:"R2 Reflect next damage taken on attacker, up to R2"
+                },
+                Shift_Position:{
+                    cooldown:3,
+                    ability:"D4 > 1; exchange places with target, R4"
+                },
+                Pushing_Gale:{
+                    cooldown:2,
+                    ability:"R2 throw target up to R4 away from caster (as far as possible)"
+                },
+                Pulling_Gale:{
+                    cooldown:2,
+                    ability:"R4 pull target to caster"
+                },
+                Resurrect:{
+                    cooldown:1,
+                    ability:"Raise dead Ally to 50% health, drains casters health to 1"
+                },
+                Raise_Shadow:{
+                    cooldown:2,
+                    ability:"Create controllable Shadow Creature, caster loses 5 hp"
+                },
+                Double_Time:{
+                    cooldown:2,
+                    ability:"target gets 2 turns this round, back to back or additional turn after caster if already completed turn"
+                },
+                Mana_Bomb:{
+                    cooldown:2,
+                    ability:"R2 place large bomb, explodes in 2 turns for D12 damage to tile and surrounding tiles"
+                },
+                Blood_Bow:{
+                    cooldown:1,
+                    ability:"R6, D6, caster loses 1hp "
+                },
+                Anchor:{
+                    cooldown:2,
+                    ability:"target cannot move for 1 turn"
+                },
+                Gel:{
+                    cooldown:3,
+                    ability:"target loses next turn"
+                }
             }
         }
 
@@ -480,6 +700,7 @@
                     int:"Dumb",
                     attack:"D4",
                     cost:1
+                
                 },
                 Wolf:{
                     move:3,
@@ -510,7 +731,7 @@
                     cost:2
                 },
                 Skeleton_Archer:{
-                    move:1,
+                    move:2,
                     armor:2,
                     int:"Smart",
                     attack:"D6 R3",
@@ -560,9 +781,73 @@
                     attack:"Healing Touch; D6",
                     cost:3
                 }
+            },
+            Village:{
+                Enchanted_Wolf:{
+                    move:3,
+                    armor:3,
+                    int:"Dumb",
+                    attack:"D8; Howl",
+                    cost:2
+                },
+                Enchanted_Bat:{
+                    move:4,
+                    armor:2,
+                    int:"Dumb",
+                    attack:"D8",
+                    cost:0
+                },
+                Enslaved_Villager:{
+                    move:2,
+                    armor:2,
+                    int:"Dumb",
+                    attack:"D6 R2 Pierce",
+                    cost:1
+                },
+                Enslaved_Soldier:{
+                    move:2,
+                    armor:4,
+                    int:"Smart",
+                    attack:"D8; can dodge",
+                    cost:3
+                },
+                Enslaved_Archer:{
+                    move:3,
+                    armor:4,
+                    int:"Smart",
+                    attack:"D6 R3",
+                    cost:3
+                },
+                Minor_Succubus:{
+                    move:3,
+                    hp:6,
+                    armor:4,
+                    int:"Smart",
+                    attack:"Draining Kiss, Trance, D6; can dodge",
+                    cost:3
+                }
             }
         }
 
+        for(let key in monsters){
+            let i = 1;
+            for(let entry in monsters[key]){
+                monsters[key][entry].hp = monsters[key][entry].hp || 1; 
+                monsters[key][entry].roll = i;
+                i += 1;
+            }
+        }
+
+        for(let key in items){
+            let i = 1;
+            for(let item in items[key]){
+                items[key][item].roll = i;
+                i+= 1;
+            }
+        }
+
+        renderInventory();
+    
         function monsterStats(monster){
             monster = monster.replace(' ','_');
             for(let key in monsters){
@@ -585,17 +870,52 @@
         monsterRoll.addEventListener('mousedown',nextTurn,false);
         nextTurn();
 
+        function counter(n,callback){
+            const span = document.createElement('span');
+            span.className = 'counter';
+            
+            const out = document.createElement('span');
+            
+            const lower =document.createElement('button');
+            lower.addEventListener('mousedown',function(){
+                n -= 1
+                out.textContent = n;
+                callback(n);
+            });
+            lower.textContent = '<';
+            
+            const higher =document.createElement('button');
+            higher.addEventListener('mousedown',function(){
+                n += 1
+                out.textContent = n;
+                callback(n);
+            });
+            higher.textContent = '>';
+
+            out.textContent = n;
+            span.appendChild(lower);
+            span.appendChild(out);
+            span.appendChild(higher);
+            return span;    
+        }
+
         function nextTurn(){
             wave += 1
             if(wave > 10){
                 wave = 1;
-                area = 'Caves';
+                if(area === 'Forest'){
+                    area = 'Caves';
+                }else if(area === 'Caves'){
+                    area = "Village";
+                }
             }
 
 
             const areas = {
                 Forest:Object.keys(monsters.Forest),
                 Caves:Object.keys(monsters.Caves),
+                Village:Object.keys(monsters.Village),
+
             }
 
             monsterRollOut.innerHTML = '<hr/>';
