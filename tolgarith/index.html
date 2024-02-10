@@ -108,10 +108,33 @@
             width:200px;
             outline:none;
             padding:10px;
+            z-index:9999;
+        }
+
+        .board{
+            border:solid 3px #000;
+            margin:auto;
+        }
+
+        .game{
+            margin:auto;
+            text-align:center;
         }
 
         tr:nth-child(1){
             font-weight: bold;
+        }
+
+        .tileButton{
+            font-size:64px;
+            width:100px;
+            height: 100px;
+            border-radius:100px;
+            border:solid 1px #000;
+        }
+
+        .tileButton:hover{
+            background:#fff;
         }
 
         @media print{
@@ -169,6 +192,66 @@
         <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
     </table>
     -->
+
+    <div class="page">
+
+        <pre>
+
+            <b>Board Setup</b>
+
+            Forest
+                scatter rocks and crates, no long corridors or rooms
+
+            Cave
+                scatter rocks and crates, with long corridors, no rooms
+
+            Village
+                rooms and corridors with crates
+
+            Castle
+            TBD
+
+            At the start you have a monster budget of 1, increasing by 1 per level (resetting at each area) and + 1 per area
+            roll a D6 to determine what monster you fight and subtract it's cost from the budget for that round, continue to roll into you use up your budget, 
+            the budget recalculates on the next level
+
+            <b>Combat</b>
+
+            the player(s) always move first, on your turn you can 
+            
+            move
+            attack (consumes action)
+            short rest (consumes action)
+            long rest (consumes turn)
+            change equipment (consumes action, can change everything in 1 turn)
+            skip turn (consumes turn)
+
+            you defeat an enemy by rolling their armor level or higher
+
+            dumb enemies mindlessly charge at the nearest player, happily stepping on traps along the way
+            mid enemies will only step on traps under certain circumstance but will otherwise charge the nearest player
+            smart enemies will always avoid traps unless specified and will keep in the ideal range for their weapon, moving, attacking and moving away if possible
+
+            enemy skills are listed by order, they will try and use the first ability that has an effect, moving through the list until something will hit 
+
+            upon killing an enemy, roll a d4 if greater that 2, place a chest at their location, on pickup, roll a d4, 1-2 is D20 money, 3 is D20 Item, and 4 is D20 weapon
+            
+            if your hp is above 3 and you receive a strike that would kill you, you are still alive but must short rest within the next 5 turns
+
+            every 5 levels before the enemies spawn a random merchant will appear, roll a d4 to decide
+
+            1, 2 - traveling merchant, roll 4D20, they sells 3 items and 1 weapon, you can also sell to them
+
+            3 - traveling scholar, roll 4D20, they sells 2 items and 2 spells, you can also sell to them
+
+            4 - mysterious shadow, they sell all the items you've had on this and previous runs for 1.5x price 
+
+            <hr>
+
+        </pre>
+
+    </div>
+
     <div id="optionsContainer"></div>
 </div>
     <script>
@@ -869,6 +952,68 @@
 
         monsterRoll.addEventListener('mousedown',nextTurn,false);
         nextTurn();
+
+        const game = document.createElement('div');
+        game.className = 'game page noprint';
+        document.body.appendChild(game);
+
+        setupGame(game);
+
+        function setupGame(container){
+            let current_tile = '';
+
+            const tiles = ['🪨','🧟','🪙','🏹','🐺'];
+
+            for(let tile of tiles){
+                const b = document.createElement('button');
+                b.textContent = tile;
+                b.className = 'tileButton';
+                container.appendChild(b);
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const w = 800;
+            const h = 800;
+            canvas.width = w;
+            canvas.height = h;
+            canvas.className = 'board';
+            container.appendChild(canvas);
+
+            const grid = new Grid(8,8);
+            grid.loop((x,y,v) => {
+                const s = 100;
+                ctx.strokeRect(x*100,y*100,100,100);
+            });
+
+            function draw(){
+                requestAnimationFrame(draw);
+                ctx.fillText(current_tile);
+            }
+        }
+
+        function Grid(w,h){
+            const data = [];
+            console.log({w,h});
+            for(let i = 0; i < w * h; i++){
+                data.push(0);
+            }
+            this.get = function(x,y,v){
+                const id = x + y * w;
+                if(id > data.length-1 || id < 0){
+                    return -1;
+                }
+                return 
+            }
+            this.loop =function(callback){
+                for(let x = 0; x < w; x++){
+                    for(let y = 0; y < h; y++){
+                        callback(x,y,data[x+y*w]);
+                    }
+                }
+            }
+        }
+
 
         function counter(n,callback){
             const span = document.createElement('span');
