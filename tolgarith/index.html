@@ -23,6 +23,10 @@
             line-height: 1.5em;
         }
 
+        canvas{
+            image-rendering: pixelated;
+        }
+
         button{
             margin:5px;
             padding:10px;
@@ -112,7 +116,7 @@
         }
 
         .board{
-            border:solid 3px #000;
+            border:solid 1px #000;
             margin:auto;
         }
 
@@ -135,6 +139,27 @@
 
         .tileButton:hover{
             background:#fff;
+        }
+
+        .log{
+            padding:10px;
+            font-family: monospace;
+            margin:10px;
+            border:solid 1px #000;
+            height:800px;
+            width:200px;
+            overflow: auto;
+            outline:none;
+            line-height: 1.8em;
+        }
+
+        .monsterInfo{
+            min-width:200px;
+            border:solid 1px #000;
+            display:inline-block;
+            padding:10px;
+            margin:5px;
+            text-align:left;
         }
 
         @media print{
@@ -253,9 +278,51 @@
     </div>
 
     <div id="optionsContainer"></div>
+    <div id="monsterButtonList"></div>
 </div>
     <script>
         
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const grid = new Grid(8,8);
+        let selected;
+
+        const imgs = {};
+
+        const tileSize = 32*3;
+        const pieceSize = 64;
+
+        imgs.bunny = loadImage('i/bunny.png');
+        imgs.skull = loadImage('i/skull.png');
+        imgs.rock = loadImage('i/rock.png');
+        imgs.brick = loadImage('i/brick.png');
+        imgs.orc = loadImage('i/orc.png');
+        imgs.wolf = loadImage('i/wolf.png');
+        imgs.golem = loadImage('i/golem.png');
+        imgs.shadow = loadImage('i/shadow.png');
+        imgs.zombie = loadImage('i/zombie.png');
+
+        imgs.skeletonArcher = loadImage('i/skeleton_archer.png');
+        imgs.skeletonWarrior = loadImage('i/skull.png');
+        
+
+        function loadImage(src){
+            const img = new Image();
+            img.src = src;
+            return img;
+        }
+
+        const icon_lut = {
+            '🪨':imgs.rock,
+            'P':imgs.bunny,
+            'O':imgs.orc,
+            'W':imgs.wolf,
+            "G":imgs.golem,
+            "SW":imgs.skeletonWarrior,
+            "SA":imgs.skeletonArcher,
+            "Z":imgs.zombie
+        };
+
         const inventory = document.createElement('textarea');
         document.body.appendChild(inventory);
         inventory.className = 'inventory noprint';
@@ -357,11 +424,16 @@
             ctx.restore();
         }
 
+        function note(a){
+            log.value += a+'\n';
+            log.scrollTop = log.scrollHeight;
+        }
+
         const tileOptions = "🐻🪨🎁🦇🕷️🦂";
 
         let wave = 0;
         let area = 'Forest';
-
+        
         const display = document.createElement('p');
 
         updateDisplay();
@@ -407,8 +479,20 @@
         const monsterRollOut = document.createElement('p');
         page.appendChild(monsterRollOut);
         
+        mouse = {
+            x:0,
+            y:0,
+            gx:0,
+            gy:0
+        }
+
+        const log = document.createElement('textarea');
+        log.className = 'log';
+        log.setAttribute('readonly',true);
 
         function renderInventory(){
+
+
             const page = document.createElement('page');
             page.className = 'page';
             document.body.appendChild(page);
@@ -419,9 +503,7 @@
                 return e;
             }
 
-
             page.appendChild(tableify(items.equipment,'Equipment'))
-
             page.appendChild(tableify(items.items,'Item'))
 
             const page2 = document.createElement('page');
@@ -953,47 +1035,129 @@
         monsterRoll.addEventListener('mousedown',nextTurn,false);
         nextTurn();
 
-        const game = document.createElement('div');
-        game.className = 'game page noprint';
-        document.body.appendChild(game);
+        rollButton('D4',d4);
+        rollButton('D6',d6);
+        rollButton('D12',d12);
+        rollButton("D20",d20);
 
-        setupGame(game);
+        optionsContainer.appendChild(document.createElement('br'));
+
+        for(let area in monsters){
+            for(let monster in monsters[area]){
+                const button = document.createElement('button');
+                button.textContent = monster.split('_').join(' ');
+                button.addEventListener('mousedown',function(){
+                    spawnMonster(monster);
+                });
+                monsterButtonList.appendChild(button);
+            }
+        }
+
+        function rollButton(text,func,parent=optionsContainer){
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.addEventListener('mousedown',function(){
+                note("Rolled a "+text+": "+(func()+1))
+            });
+           parent.appendChild(button);
+        }
+
+        setupGame(page);
+        page.appendChild(log);
 
         function setupGame(container){
+            
             let current_tile = '';
 
-            const tiles = ['🪨','🧟','🪙','🏹','🐺'];
-
-            for(let tile of tiles){
-                const b = document.createElement('button');
-                b.textContent = tile;
-                b.className = 'tileButton';
-                container.appendChild(b);
-            }
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const w = 800;
-            const h = 800;
+            const w = tileSize*8;
+            const h = tileSize*8;
             canvas.width = w;
             canvas.height = h;
             canvas.className = 'board';
             container.appendChild(canvas);
 
-            const grid = new Grid(8,8);
+
+            for(let i = 0; i < 9; i++){
+                
+                const x = rand(8);
+                const y = rand(8);
+
+                grid.set(x,y,'🪨')
+
+            }
+
+            const a = d4();
+            const b = d4();
+            const c = d4();
+
+            grid.quadraticSet(a,b,c,'P');
+
+            render();
+
+        }
+
+        function render(){
+            ctx.font = '40px arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = "middle";
+            ctx.imageSmoothingEnabled = false;
+            const s = tileSize;
+            const hs = s * 0.5;
+            ctx.fillStyle = 'rgba(0,0,0,0.1)'
+            ctx.lineWidth = 1;
+            ctx.strokeRect(mouse.gx*s+10,mouse.gy*s+10,s-20,s-20);
+            ctx.fillStyle = '#000';
+            ctx.lineWidth = 1;
+            
             grid.loop((x,y,v) => {
-                const s = 100;
-                ctx.strokeRect(x*100,y*100,100,100);
+                ctx.drawImage(imgs.brick,0,0,16,16,x*s,y*s,s,s);
             });
 
-            function draw(){
-                requestAnimationFrame(draw);
-                ctx.fillText(current_tile);
+            /*
+            ctx.beginPath();
+            for(let x = 0; x < 8; x++){
+                for(let y = 0; y < 8; y++){
+                    ctx.moveTo(0,y*s);
+                    ctx.lineTo(x*s+s,y*s);
+                    ctx.moveTo(x*s,0);
+                    ctx.lineTo(x*s,y*s+s)
+                }
             }
+            ctx.strokeStyle = '#fff';
+            ctx.stroke();
+            ctx.strokeStyle = '#000';
+            */
+            const hps = pieceSize * 0.5;
+
+            grid.loop((x,y,v) => {
+                if(v){
+                    if(icon_lut[v]){
+                        ctx.globalAlpha = 0.2;
+                        ctx.drawImage(imgs.shadow,0,0,16,16,x*s+hs-hps,y*s+hs-hps+8,pieceSize,pieceSize);
+                        ctx.globalAlpha = 1.0;
+                        ctx.drawImage(icon_lut[v],0,0,16,16,x*s+hs-hps,y*s+hs-hps,pieceSize,pieceSize);
+                    }else{
+                        ctx.fillText(v,x*s+hs,y*s+hs);
+                    }
+                }
+            });
+
+            if(selected){
+                const ps = pieceSize * 0.75;
+                const x = mouse.gx;
+                const y = mouse.gy;
+                if(icon_lut[selected]){
+                    ctx.drawImage(icon_lut[selected],0,0,16,16,x*s+ps*0.5,y*s+ps*0.5,ps,ps);
+                }else{
+                    ctx.fillText(v,x*s+hs,y*s+hs);
+                }
+            }
+
         }
 
         function Grid(w,h){
             const data = [];
+            this.data = data;
             console.log({w,h});
             for(let i = 0; i < w * h; i++){
                 data.push(0);
@@ -1003,8 +1167,16 @@
                 if(id > data.length-1 || id < 0){
                     return -1;
                 }
-                return 
+                return data[id];
             }
+            this.set = function(x,y,v){
+                const id = x + y * w;
+                if(id > data.length-1 || id < 0){
+                    return false
+                }
+                data[id] = v;
+                return true;
+            };
             this.loop =function(callback){
                 for(let x = 0; x < w; x++){
                     for(let y = 0; y < h; y++){
@@ -1012,8 +1184,65 @@
                     }
                 }
             }
-        }
 
+            this.quadraticSet = function(a,b,c,v){
+                let x = 0;
+                let y = 0;
+                let lut = [
+                    [1,0],
+                    [1,1],
+                    [0,1],
+                    [0,0]
+                ];
+                const aa = lut[a];
+                const bb = lut[b];
+                const cc = lut[c];
+
+                x += aa[0] * 4;
+                y += aa[1] * 4;
+
+                x += bb[0] * 2;
+                y += bb[1] * 2;
+                
+                x += cc[0];
+                y += cc[1];
+                const id = x + y * w;
+                if(id > data.length-1 || id < 0){
+                    return false
+                }
+                data[id] = v;
+                return true;
+            }
+
+            this.quadraticGet = function(a,b,c,v){
+                let x = 0;
+                let y = 0;
+                let lut = [
+                    [1,0],
+                    [1,1],
+                    [0,1],
+                    [0,0]
+                ];
+                const aa = lut[a];
+                const bb = lut[b];
+                const cc = lut[c];
+
+                x += aa[0] * 4;
+                y += aa[1] * 4;
+
+                x += bb[0] * 2;
+                y += bb[1] * 2;
+                
+                x += cc[0];
+                y += cc[1];
+                const id = x + y * w;
+                if(id > data.length-1 || id < 0){
+                    return undefined;
+                }
+                console.log(data[id]);
+                return data[id];
+            }
+        }
 
         function counter(n,callback){
             const span = document.createElement('span');
@@ -1044,7 +1273,17 @@
             return span;    
         }
 
+        function getQuadraticPlayerPosition(){
+            let pos;
+            grid.loop(function(x,y,v){
+                if(v === 'P'){
+
+                }
+            })
+        }
+
         function nextTurn(){
+            
             wave += 1
             if(wave > 10){
                 wave = 1;
@@ -1055,12 +1294,10 @@
                 }
             }
 
-
             const areas = {
                 Forest:Object.keys(monsters.Forest),
                 Caves:Object.keys(monsters.Caves),
                 Village:Object.keys(monsters.Village),
-
             }
 
             monsterRollOut.innerHTML = '<hr/>';
@@ -1087,19 +1324,89 @@
             }
             let first = true;
             let cc = wave;
+            let monsterCount = 1;
+            var qPlayerPos = getQuadraticPlayerPosition();
             while(cc >= 0){
                 let next = areas[area][d6()];
                 const monster = getMonster(next);
                 if(cc - monster.cost >= 0  || first){
+
                     first = false;
-                    let position = [d4()+1,d4()+1,d4()+1];
-                    monsterRollOut.innerHTML += `${monsterStats(next)} <br/> Position ${position[0]},${position[1]},${position[2]}<br/><br/>`;
+                    spawnMonster(next);
+                    monsterCount += 1;
                 }
                 cc -= monster.cost;
             }
 
             updateDisplay();
+            render();
         }
+
+        function spawnMonster(next){
+            let a = d4();
+            let b = d4();
+            let c = d4();
+            let l = 0;
+            while(grid.quadraticGet(a,b,c) !== undefined && l < 100){
+                a = d4();
+                b = d4();
+                c = d4();
+                l++;
+            }
+
+            let position = [a+1,b+1,c+1];
+            const monsterInfo = document.createElement('span');
+            monsterInfo.innerHTML = `${monsterStats(next)} <br/> Position ${position[0]},${position[1]},${position[2]}`;
+            monsterInfo.className = 'monsterInfo';
+            monsterRollOut.appendChild(monsterInfo);
+
+            grid.quadraticSet(a,b,c,initials(next));
+            render();
+        }
+
+        function initials(name){
+            const words = name.split(' ').join('_').split('_');
+            console.log( words.map(a => a[0]).join(''))
+            return words.map(a => a[0]).join('');
+        }
+
+        canvas.addEventListener('mousemove',function(e){
+            ctx.fillStyle = '#000';
+            var rect = canvas.getBoundingClientRect();
+            
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            
+            mouse.x = x;
+            mouse.y = y;
+            
+            const gx = Math.floor(x/100);
+            const gy = Math.floor(y/100);
+            
+            mouse.gx = gx;
+            mouse.gy = gy;
+            
+            render();
+
+        })
+
+        canvas.addEventListener('mousedown',function(e){
+            var rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const gx = Math.floor(x/100);
+            const gy = Math.floor(y/100);
+            if(selected){
+                grid.set(gx,gy,selected);
+                selected = false;
+            }else{
+                selected = grid.get(gx,gy);
+                grid.set(gx,gy,0);
+            }
+        })
 
     </script>
 </body>
