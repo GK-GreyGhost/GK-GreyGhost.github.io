@@ -284,7 +284,13 @@
         
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const grid = new Grid(8,8);
+        const grid = new Grid(9,9);
+        const gridHighlights = new Grid(8,8);
+        
+        gridHighlights.loop((x,y,v) => {
+            gridHighlights.set(x,y,'rgba(0,0,0,0.0)');    
+        });
+
         let selected;
 
         const imgs = {};
@@ -301,6 +307,9 @@
         imgs.golem = loadImage('i/golem.png');
         imgs.shadow = loadImage('i/shadow.png');
         imgs.zombie = loadImage('i/zombie.png');
+
+        imgs.move = loadImage('i/move.png');
+        imgs.target = loadImage('i/target.png');
 
         imgs.skeletonArcher = loadImage('i/skeleton_archer.png');
         imgs.skeletonWarrior = loadImage('i/skull.png');
@@ -491,7 +500,6 @@
         log.setAttribute('readonly',true);
 
         function renderInventory(){
-
 
             const page = document.createElement('page');
             page.className = 'page';
@@ -1069,8 +1077,8 @@
             
             let current_tile = '';
 
-            const w = tileSize*8;
-            const h = tileSize*8;
+            const w = tileSize*9;
+            const h = tileSize*9;
             canvas.width = w;
             canvas.height = h;
             canvas.className = 'board';
@@ -1110,8 +1118,11 @@
             ctx.lineWidth = 1;
             
             grid.loop((x,y,v) => {
+                if(x>7)return;
+                if(y>7)return;
                 ctx.drawImage(imgs.brick,0,0,16,16,x*s,y*s,s,s);
             });
+
 
             /*
             ctx.beginPath();
@@ -1139,6 +1150,14 @@
                     }else{
                         ctx.fillText(v,x*s+hs,y*s+hs);
                     }
+                }
+            });
+
+            gridHighlights.loop((x,y,v) => {
+                if(v === 1){
+                    ctx.drawImage(imgs.move,0,0,16,16,x*s+hs*0.5,y*s+hs*0.5,hs,hs);
+                }else if(v === 2){
+                    ctx.drawImage(imgs.target,0,0,16,16,x*s+hs*0.5,y*s+hs*0.5,hs,hs); 
                 }
             });
 
@@ -1177,6 +1196,37 @@
                 data[id] = v;
                 return true;
             };
+
+            this.floodFill = function(x,y,v,isSolid,r=Infinity){
+                let visited = {};
+                let frontlines = [];
+
+                function push(x,y,dis){
+                    if(dis >= r){
+                        return;
+                    } 
+                    const id = (x + y * w).toString();
+                    if(!visited[id] && !isSolid(x,y)){
+                        visited[id] = true;
+                        frontlines.push([x,y,dis+1]);
+                    }
+                }
+
+                push(x+1,y,0);
+                push(x-1,y,0);
+                push(x,y+1,0);
+                push(x,y-1,0);
+
+                while(frontlines.length>0){
+                    var next = frontlines.shift();
+                    push(next[0]+1,next[1],next[2]);
+                    push(next[0]-1,next[1],next[2]);
+                    push(next[0],next[1]+1,next[2]);
+                    push(next[0],next[1]-1,next[2]);
+                    this.set(next[0],next[1],v);
+                }
+            };
+
             this.loop =function(callback){
                 for(let x = 0; x < w; x++){
                     for(let y = 0; y < h; y++){
@@ -1401,10 +1451,28 @@
             const gy = Math.floor(y/100);
             if(selected){
                 grid.set(gx,gy,selected);
+                gridHighlights.loop((x,y,v) => {
+                    gridHighlights.set(x,y,false);
+                });
+                gridHighlights.floodFill(gx,gy,2,function(x,y){
+                    if(x < 0 || x > 7) return true;
+                    if(y < 0 || y > 7) return true;
+                    return false;
+                },1);
                 selected = false;
             }else{
                 selected = grid.get(gx,gy);
                 grid.set(gx,gy,0);
+                gridHighlights.loop((x,y,v) => {
+                    gridHighlights.set(x,y,false);
+                });
+                gridHighlights.floodFill(gx,gy,1,function(x,y){
+                    if(x < 0 || x > 7) return true;
+                    if(y < 0 || y > 7) return true;
+                    if(grid.get(x,y)) return true;
+                    return false;
+                },3);
+
             }
         })
 
