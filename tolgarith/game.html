@@ -219,6 +219,7 @@
     </table>
     -->
 
+    <!--
     <div class="page">
 
         <pre>
@@ -275,8 +276,8 @@
             <hr>
 
         </pre>
-
     </div>
+    -->
 
     <div id="optionsContainer"></div>
     <div id="monsterButtonList"></div>
@@ -287,13 +288,16 @@
         const ctx = canvas.getContext('2d');
         const grid = new Grid(9,9);
         const gridHighlights = new Grid(8,8);
+        const gridNav = new Grid(8,8);
         
+
         gridHighlights.loop((x,y,v) => {
             gridHighlights.set(x,y,'rgba(0,0,0,0.0)');    
         });
 
         let selected;
         let actors = [];
+        const player = new BasePawn();
 
         const imgs = {};
 
@@ -870,14 +874,15 @@
         const monsters = {
             Forest:{
                 Zombie:{
+                    image:imgs.zombie,
                     move:1,
                     armor:3,
                     int:"Dumb",
                     attack:"D4",
                     cost:1
-                
                 },
                 Wolf:{
+                    image:imgs.wolf,
                     move:3,
                     armor:2,
                     int:"Dumb",
@@ -885,6 +890,7 @@
                     cost:3
                 },
                 Orc:{
+                    image:imgs.orc,
                     move:2,
                     armor:3,
                     int:"Mid",
@@ -892,6 +898,7 @@
                     cost:3
                 },
                 Golem:{
+                    image:imgs.golem,
                     move:1,
                     armor:4,
                     int:"Dumb",
@@ -899,6 +906,7 @@
                     cost:3
                 },
                 Skeleton_Warrior:{
+                    image:imgs.skeletonWarrior,
                     move:2,
                     armor:2,
                     int:"Dumb",
@@ -906,6 +914,7 @@
                     cost:2
                 },
                 Skeleton_Archer:{
+                    image:imgs.skeletonArcher,
                     move:2,
                     armor:2,
                     int:"Smart",
@@ -1021,7 +1030,7 @@
             }
         }
 
-        renderInventory();
+        //renderInventory();
     
         function monsterStats(monster){
             monster = monster.replace(' ','_');
@@ -1043,7 +1052,7 @@
         }
 
         monsterRoll.addEventListener('mousedown',nextTurn,false);
-        nextTurn();
+        nextWave();
 
         rollButton('D4',d4);
         rollButton('D6',d6);
@@ -1051,7 +1060,7 @@
         rollButton("D20",d20);
 
         optionsContainer.appendChild(document.createElement('br'));
-
+        /*
         for(let area in monsters){
             for(let monster in monsters[area]){
                 const button = document.createElement('button');
@@ -1062,6 +1071,7 @@
                 monsterButtonList.appendChild(button);
             }
         }
+        */
 
         function rollButton(text,func,parent=optionsContainer){
             const button = document.createElement('button');
@@ -1099,46 +1109,101 @@
 
         }
 
-        function Pawn(x,y){
-            this.x = 0;
-            this.y = 0;
-            this.actions = {};
-            this.render = function(ctx){
-
-            }
-
-        }
-
         function BasePawn(){
+            this.name = '';
             this.health = 10;
             this.armor = 0;
-            this.move = 0;
+            this.movementSpeed = 0;
+            this.attackCount = 1;
+            this.position = vec2(0,0);
             this.attackDice = 0;
+            this.attacked = 0;
+            this.moved = 0;
             this.attackRange = 0;
             this.iq = 0;
             this.actions = {
                 move:ActionMove,
                 push:ActionPush
             };
-            this.onCreated = function(){
-
+            this.navCloser = function(){
+                let lowest = Infinity;
+                let dir = vec2(0,0);
+                for(let d of V2.cardinal){
+                    const n = gridNav.get(this.position.x+d.x,this.position.y+d.y,Infinity);
+                    console.log(n,lowest,d);
+                    if(n < lowest){
+                        lowest = n;
+                        dir = d;
+                    }
+                }
+                this.moveDirection(dir)
             }
-            this.onRemoved = function(){
-
+            this.moveDirection = function(dir){
+                this.move(
+                    this.position.x+dir.x,
+                    this.position.y+dir.y
+                );
             }
-            this.remove() = function(){
-                this.onRemoved();
+            this.remove = function(){
+                grid.set(this.position.x,this.position.y,0);
+                const i = actors.indexOf(this);
+                actors.splice(i,1);
+                note(this.name + ' died');
             };
+            this.hurt = function(attacker,damage){
+                damage -= this.armor;
+                if(damage <= 0){
+                    note(attacker.name +"'s attack bounces off!");
+                }else{
+                    note(this.name+" takes " + damage +" damage!");
+                    this.health -= damage;
+                    if(this.health <= 0){
+                        note(this.name + " died");
+                    }
+                }
+            };
+            this.attemptAttack = function(target){
+                
+                if(!target.hurt){
+                    return;
+                }
+
+                if(this.attackCount - this.attacked <= 0){
+                    return;
+                }
+
+                this.attacked += 1;
+                target.hurt(this,Math.floor(Math.random()*this.attackDice));
+
+            }
+            this.move = function(x,y){
+
+                if(grid.get(x,y)){
+                    return;
+                }
+
+                var dis = Math.max(Math.abs(x-this.position.x), Math.abs(y-this.position.y));
+                
+                if(dis > this.movementSpeed-this.moved){
+                    return;
+                }
+
+                grid.set(this.position.x,this.position.y,0);
+                grid.set(x,y,this);
+                this.moved += dis;
+                this.position.x = x;
+                this.position.y = y;
+            }
+            actors.push(this);
         }
 
-        BasePawn.prototype = Pawn
 
         function setupGame(container){
             
             let current_tile = '';
 
-            const w = tileSize*9;
-            const h = tileSize*9;
+            const w = tileSize*8;
+            const h = tileSize*8;
             canvas.width = w;
             canvas.height = h;
             canvas.className = 'board';
@@ -1158,14 +1223,20 @@
             const b = d4();
             const c = d4();
 
-            grid.quadraticSet(a,b,c,'P');
+            player.health = player.maxHealth = 10;
+            player.movementSpeed = 3;
+            player.attackDice = 6;
+            player.attackRange = 1;
+            player.position = grid.quadraticToGrid(a,b,c);
+            player.image = imgs.bunny;
+            grid.quadraticSet(a,b,c,player);
 
             render();
 
         }
 
         function render(){
-            ctx.font = '40px arial';
+            ctx.font = '40px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = "middle";
             ctx.imageSmoothingEnabled = false;
@@ -1178,13 +1249,13 @@
             ctx.lineWidth = 1;
             
             grid.loop((x,y,v) => {
-                if(x>7)return;
-                if(y>7)return;
                 ctx.drawImage(imgs.brick,0,0,16,16,x*s,y*s,s,s);
             });
 
             const hps = pieceSize * 0.5;
 
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 5;
             grid.loop((x,y,v) => {
                 if(v){
                     if(icon_lut[v]){
@@ -1192,6 +1263,22 @@
                         ctx.drawImage(imgs.shadow,0,0,16,16,x*s+hs-hps,y*s+hs-hps+8,pieceSize,pieceSize);
                         ctx.globalAlpha = 1.0;
                         ctx.drawImage(icon_lut[v],0,0,16,16,x*s+hs-hps,y*s+hs-hps,pieceSize,pieceSize);
+                    }else if(v.image){
+                        let movesLeft = v.movementSpeed - v.moved;
+                        let attacksLeft = v.attackCount-v.attacked;
+                        if(movesLeft + attacksLeft === 0){
+                            ctx.globalAlpha = 0.5;
+                        }
+                        const px = x*s+hs-hps;
+                        const py = y*s+hs-hps;
+                        ctx.drawImage(v.image,0,0,16,16,px,py,pieceSize,pieceSize);
+                        ctx.fillStyle = 'green';
+                        ctx.strokeText(movesLeft,px,py-hps*0.33);
+                        ctx.fillText(movesLeft,px,py-hps*0.33);
+                        ctx.fillStyle = 'red';
+                        ctx.strokeText(attacksLeft,px+pieceSize,py-hps*0.33);
+                        ctx.fillText(attacksLeft,px+pieceSize,py-hps*0.33);
+                        ctx.globalAlpha = 1.0;
                     }else{
                         ctx.fillText(v,x*s+hs,y*s+hs);
                     }
@@ -1206,19 +1293,25 @@
                 }
             });
 
-            for(let actor of actors){
-                actor.render(ctx);
-            }
+            gridNav.loop((x,y,v) => {
+                const px = x*s+hs;
+                const py = y*s+hs;
+                ctx.fillText(v,px,py);
+            });
 
             if(selected){
+                ctx.globalAlpha = 0.5;
                 const ps = pieceSize * 0.75;
                 const x = mouse.gx;
                 const y = mouse.gy;
                 if(icon_lut[selected]){
                     ctx.drawImage(icon_lut[selected],0,0,16,16,x*s+ps*0.5,y*s+ps*0.5,ps,ps);
+                }else if(selected.image){
+                    ctx.drawImage(selected.image,0,0,16,16,x*s+hs-hps,y*s+hs-hps,pieceSize,pieceSize);
                 }else{
-                    ctx.fillText(v,x*s+hs,y*s+hs);
+                    ctx.fillText(initials(selected.name),x*s+hs,y*s+hs);
                 }
+                ctx.globalAlpha = 1.0;
             }
 
         }
@@ -1230,12 +1323,13 @@
             for(let i = 0; i < w * h; i++){
                 data.push(0);
             }
-            this.get = function(x,y,v){
+            this.get = function(x,y,v,def=-1){
                 const id = x + y * w;
                 if(id > data.length-1 || id < 0){
-                    return -1;
+                    return def;
                 }
                 return data[id];
+
             }
             this.set = function(x,y,v){
                 const id = x + y * w;
@@ -1246,9 +1340,59 @@
                 return true;
             };
 
-            this.floodFill = function(x,y,v,isSolid,r=Infinity){
+
+            this.navFill = function(x,y,isSolid){
+
+                this.loop((x,y) => {
+                    this.set(x,y,99);
+                })
+
                 let visited = {};
                 let frontlines = [];
+
+                function push(x,y,dis){
+                    const id = (x + y * w).toString();
+                    if(!visited[id] && !isSolid(x,y)){
+                        visited[id] = true;
+                        frontlines.push([x,y,dis+1]);
+                    }
+                }
+
+                push(x+1,y,0);
+                push(x-1,y,0);
+                push(x,y+1,0);
+                push(x,y-1,0);
+
+                /*
+                push(x+1,y+1,0);
+                push(x-1,y-1,0);
+                push(x-1,y+1,0);
+                push(x+1,y-1,0);
+                */
+                while(frontlines.length>0){
+                    var next = frontlines.shift();
+                    push(next[0]+1,next[1],next[2]);
+                    push(next[0]-1,next[1],next[2]);
+                    push(next[0],next[1]+1,next[2]);
+                    push(next[0],next[1]-1,next[2]);
+                    /*
+                    push(next[0]+1,next[1]+1,next[2]);
+                    push(next[0]-1,next[1]-1,next[2]);
+                    push(next[0]-1,next[1]+1,next[2]);
+                    push(next[0]+1,next[1]-1,next[2]);
+                    */
+                    this.set(next[0],next[1],next[2]);
+                }
+                this.set(x,y,0);
+            };
+
+            this.floodFill = function(x,y,v,isSolid,r=1){
+                let visited = {};
+                let frontlines = [];
+                
+                if(r <= 0){
+                    return;
+                }
 
                 function push(x,y,dis){
                     if(dis >= r){
@@ -1266,12 +1410,24 @@
                 push(x,y+1,0);
                 push(x,y-1,0);
 
+                /*
+                push(x+1,y+1,0);
+                push(x-1,y-1,0);
+                push(x-1,y+1,0);
+                push(x+1,y-1,0);
+                */
                 while(frontlines.length>0){
                     var next = frontlines.shift();
                     push(next[0]+1,next[1],next[2]);
                     push(next[0]-1,next[1],next[2]);
                     push(next[0],next[1]+1,next[2]);
                     push(next[0],next[1]-1,next[2]);
+                    /*
+                    push(next[0]+1,next[1]+1,next[2]);
+                    push(next[0]-1,next[1]-1,next[2]);
+                    push(next[0]-1,next[1]+1,next[2]);
+                    push(next[0]+1,next[1]-1,next[2]);
+                    */
                     this.set(next[0],next[1],v);
                 }
             };
@@ -1283,7 +1439,29 @@
                     }
                 }
             }
+            this.quadraticToGrid = function(a,b,c){
+                let x = 0;
+                let y = 0;
+                let lut = [
+                    [1,0],
+                    [1,1],
+                    [0,1],
+                    [0,0]
+                ];
+                const aa = lut[a];
+                const bb = lut[b];
+                const cc = lut[c];
 
+                x += aa[0] * 4;
+                y += aa[1] * 4;
+
+                x += bb[0] * 2;
+                y += bb[1] * 2;
+                
+                x += cc[0];
+                y += cc[1];
+                return vec2(x,y);
+            }
             this.quadraticSet = function(a,b,c,v){
                 let x = 0;
                 let y = 0;
@@ -1389,7 +1567,43 @@
         }
 
         function nextTurn(){
+
+            let cursor = 0;
+            let delay = 250;
+
+            gridNav.navFill(player.position.x,player.position.y,isSolidOccupied);
             
+            function next(){
+                if(actors[cursor]){
+                    
+                    const a = actors[cursor];
+                    if(a.iq > 0){
+                        if(a.movementSpeed - a.moved <= 0){
+                            cursor += 1;
+                            setTimeout(next,delay);
+                            return;
+                        }else{
+                            a.navCloser();
+                            gridNav.navFill(player.position.x,player.position.y,isSolidOccupied);
+                            setTimeout(next,delay);
+                        }
+                    }else{
+                        cursor += 1;
+                        next();
+                    }
+                }else{
+                    for(let actor of actors){
+                        actor.moved = 0;
+                        actor.attacked = 0;
+                    }
+                }
+            }
+
+            next();
+
+        }
+
+        function nextWave(){
             wave += 1
             if(wave > 10){
                 wave = 1;
@@ -1453,6 +1667,7 @@
             let b = d4();
             let c = d4();
             let l = 0;
+
             while(grid.quadraticGet(a,b,c) !== undefined && l < 100){
                 a = d4();
                 b = d4();
@@ -1465,9 +1680,24 @@
             monsterInfo.innerHTML = `${monsterStats(next)} <br/> Position ${position[0]},${position[1]},${position[2]}`;
             monsterInfo.className = 'monsterInfo';
             monsterRollOut.appendChild(monsterInfo);
+            const monster = getMonster(next);
+            const gp = grid.quadraticToGrid(a,b,c);
+            console.log(monster);
 
-            grid.quadraticSet(a,b,c,initials(next));
+            const actor = new BasePawn()
+            actor.image = monster.image;
+            actor.health = monster.hp;
+            actor.maxHealth = monster.hp;
+            actor.armor = monster.armor;
+            actor.iq = ({Dumb:1,mid:2,Smart:3})[monster.int]; //this is a cursed line of code lol
+            actor.attackDice = parseInt(monster.attack.split(' ').shift(),10);
+            actor.attackRange = parseInt(monster.attack.split(' ').pop(),10);
+            actor.position = gp;
+            actor.movementSpeed = monster.move;
+            grid.set(gp.x,gp.y,actor);
+
             render();
+
         }
 
         function initials(name){
@@ -1506,7 +1736,26 @@
             const gx = Math.floor(x/100);
             const gy = Math.floor(y/100);
             if(selected){
-                grid.set(gx,gy,selected);
+                const target = grid.get(gx,gy);
+                if(target){
+                    if(target == selected){
+                        selected = false;
+                        gridHighlights.loop((x,y,v) => {
+                            gridHighlights.set(x,y,false);
+                        });
+                        if(selected.attackCount - selected.attacked > 0){
+                            gridHighlights.floodFill(gx,gy,2,function(x,y){
+                                if(x < 0 || x > 7) return true;
+                                if(y < 0 || y > 7) return true;
+                                return false;
+                            },selected.attackRange);
+                        }
+                        return;
+                    }
+                    selected.attemptAttack(target);
+                    return;
+                }
+                selected.move(gx,gy);
                 gridHighlights.loop((x,y,v) => {
                     gridHighlights.set(x,y,false);
                 });
@@ -1514,25 +1763,36 @@
                     if(x < 0 || x > 7) return true;
                     if(y < 0 || y > 7) return true;
                     return false;
-                },1);
+                },selected.attackRange);
                 selected = false;
             }else{
                 selected = grid.get(gx,gy);
-                grid.set(gx,gy,0);
+                if(!selected){
+                    gridHighlights.loop((x,y,v) => {
+                        gridHighlights.set(x,y,false);
+                    });
+                    return;
+                }
+                if(!selected.move){
+                    selected = false;
+                    return;
+                }
                 gridHighlights.loop((x,y,v) => {
                     gridHighlights.set(x,y,false);
                 });
                 if(selected){
-                    gridHighlights.floodFill(gx,gy,1,function(x,y){
-                        if(x < 0 || x > 7) return true;
-                        if(y < 0 || y > 7) return true;
-                        if(grid.get(x,y)) return true;
-                        return false;
-                    },3);
+                    gridHighlights.floodFill(gx,gy,1,isSolidOccupied,selected.movementSpeed-selected.moved);
                 }
 
             }
         })
+
+        function isSolidOccupied(x,y){
+            if(x < 0 || x > 7) return true;
+            if(y < 0 || y > 7) return true;
+            if(grid.get(x,y)) return true;
+            return false;
+        }
 
     </script>
 </body>

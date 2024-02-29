@@ -136,6 +136,10 @@ CanvasRenderingContext2D.prototype.strokeCircle = function(x,y,r){
 // Vector2 
 //===============================================
 
+function vec2(x,y){
+    return new Vector2(x,y);
+}
+
 function Vector2(x,y){
     this.x = x;
     this.y = y;
