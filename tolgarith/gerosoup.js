@@ -129,7 +129,24 @@ CanvasRenderingContext2D.prototype.fillCircle = function(x,y,r){
 CanvasRenderingContext2D.prototype.strokeCircle = function(x,y,r){
     this.beginPath();
     this.arc(x,y,r,0,TAU);
-    this.stroke();e
+    this.stroke();
+}
+
+CanvasRenderingContext2D.prototype.outlineText = function(text,x,y){
+    this.strokeText(text,x,y);
+    this.fillText(text,x,y);
+}
+
+CanvasRenderingContext2D.prototype.fontSize = 16;
+CanvasRenderingContext2D.prototype.fontName = 'monospace';
+CanvasRenderingContext2D.prototype.setFontSize = function(n){
+    this.fontSize = n;
+    this.font = this.fontSize + 'px '+this.fontName;
+}
+
+CanvasRenderingContext2D.prototype.setFontName = function(n){
+    this.fontName = n;
+    this.font = this.fontSize + 'px '+this.fontName;
 }
 
 //===============================================
@@ -273,8 +290,7 @@ function Viewport(width,height){
         nearestNeighbor:0,
         bilinear:1
     };
-    this.canvas.addEventListener('mousemove',(e) => {
-
+    document.body.addEventListener('mousemove',(e) => {
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
@@ -604,8 +620,8 @@ function Scene(viewport){
     this.nodesUpdate = [];
     this.nodesRender = [];
     this.nodesRenderUI = [];
-
     this.viewport = viewport;
+    this.ui = new GRUI(viewport)
 
     this.loop();
     this.camera = new Camera(new Vector2(0,0));
@@ -759,12 +775,15 @@ class GRUI{
         this.color1 = this.color2;
         this.color2 = c;
     }
-    button(text,nx=this.x,ny=this.y){
+    button(text,nx=this.x,ny=this.y,mpx=this.viewport.mouse.x,mpy=this.viewport.mouse.y){
+        return this.buttonUI(text,nx,ny,mpx,mpy);
+    }
+    buttonUI(text,nx=this.x,ny=this.y,mpX=Mouse.position.x,mpY=Mouse.position.y){
         const ctx = this.viewport.ctx;
         this.x = nx;
         this.y = ny;
         let inside = false;
-        if(isPointInsideRect(Mouse.position.x,Mouse.position.y,this.x,this.y,this.buttonWidth,this.buttonHeight)){
+        if(isPointInsideRect(mpX,mpY,this.x,this.y,this.buttonWidth,this.buttonHeight)){
             ctx.fillStyle = this.color1;
             ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
             ctx.fillStyle = this.color2;
@@ -964,58 +983,59 @@ class GamepadHandler{
     loop(){
         const deadzone = this.deadzone;
         const gamepads = navigator.getGamepads();
-        for(let i = 0; i < gamepads.length; i++){
-            const gp = gamepads[i];
-            
-            const g = this.gamepads[gp.index];
-            if(!g) continue;
+        if(gamepads){
+            for(let i = 0; i < gamepads.length; i++){
+                const gp = gamepads[i];
+                if(gp){
+                    const g = gamepads[gp.index];
+                    if(!g) continue;
 
-            if(gp.axes[0] < -deadzone && g.leftStick.x > -deadzone){
-                Signals.emit('left_stick_left',gp.axes[0],gp.index)
+                    if(gp.axes[0] < -deadzone && g.leftStick.x > -deadzone){
+                        Signals.emit('left_stick_left',gp.axes[0],gp.index)
+                    }
+
+                    if(gp.axes[0] > deadzone && g.leftStick.x < deadzone){
+                        Signals.emit('left_stick_right',gp.axes[0],gp.index)
+                    }
+
+                    if(gp.axes[1] < -deadzone && g.leftStick.y > -deadzone){
+                        Signals.emit('left_stick_up',gp.axes[0],gp.index)
+                    }
+
+                    if(gp.axes[1] > deadzone && g.leftStick.y < deadzone){
+                        Signals.emit('left_stick_down',gp.axes[0],gp.index)
+                    }
+
+                    g.leftStick.x = gp.axes[0];
+                    g.leftStick.y = gp.axes[1];
+
+                    g.rightStick.x = gp.axes[2];
+                    g.rightStick.y = gp.axes[3];
+
+                    if(gp.buttons[0].value > 0 && !g.a){
+                        Signals.emit('gamepad_a',gp.buttons[0].value,gp.index);
+                    }
+
+
+                    if(gp.buttons[1].value > 0 && !g.b){
+                        Signals.emit('gamepad_b',gp.buttons[1].value,gp.index);
+                    }
+
+                    if(gp.buttons[2].value > 0 && !g.x){
+                        Signals.emit('gamepad_x',gp.buttons[2].value,gp.index);
+                    }
+
+                    if(gp.buttons[3].value > 0 && !g.y){
+                        Signals.emit('gamepad_y',gp.buttons[3].value,gp.index);
+                    }
+
+                    g.a = gp.buttons[0].value;
+                    g.b = gp.buttons[1].value;
+                    g.x = gp.buttons[2].value;
+                    g.y = gp.buttons[3].value;
+                }
             }
-
-            if(gp.axes[0] > deadzone && g.leftStick.x < deadzone){
-                Signals.emit('left_stick_right',gp.axes[0],gp.index)
-            }
-
-            if(gp.axes[1] < -deadzone && g.leftStick.y > -deadzone){
-                Signals.emit('left_stick_up',gp.axes[0],gp.index)
-            }
-
-            if(gp.axes[1] > deadzone && g.leftStick.y < deadzone){
-                Signals.emit('left_stick_down',gp.axes[0],gp.index)
-            }
-
-            g.leftStick.x = gp.axes[0];
-            g.leftStick.y = gp.axes[1];
-
-            g.rightStick.x = gp.axes[2];
-            g.rightStick.y = gp.axes[3];
-
-            if(gp.buttons[0].value > 0 && !g.a){
-                Signals.emit('gamepad_a',gp.buttons[0].value,gp.index);
-            }
-
-
-            if(gp.buttons[1].value > 0 && !g.b){
-                Signals.emit('gamepad_b',gp.buttons[1].value,gp.index);
-            }
-
-            if(gp.buttons[2].value > 0 && !g.x){
-                Signals.emit('gamepad_x',gp.buttons[2].value,gp.index);
-            }
-
-            if(gp.buttons[3].value > 0 && !g.y){
-                Signals.emit('gamepad_y',gp.buttons[3].value,gp.index);
-            }
-
-            g.a = gp.buttons[0].value;
-            g.b = gp.buttons[1].value;
-            g.x = gp.buttons[2].value;
-            g.y = gp.buttons[3].value;
-
         }
-
         requestAnimationFrame(this.boundLoop);
     }
 }
