@@ -966,6 +966,9 @@
         setupGame(document.body);
 
 
+        const game = new Game(); 
+        scene.add(game);
+
         function Action(){
             this.icon = '';
             this.render = function(ctx){
@@ -1158,11 +1161,11 @@
                     },250);
                 }
             }
-            this.hurt = function(attacker,damage){
-                damage -= this.armor;
+            this.hurt = function(attacker,baseDamage){
+                let damage = baseDamage - this.armor;
                 this.shake(0.25);
                 if(damage <= 0){
-                    this.note(attacker.name +"'s "+damage+" bounces off!");
+                    this.note(attacker.name +"'s "+baseDamage+" bounces off "+this.name+"'s "+this.armor+" armor");
                 }else{
                     this.health -= damage;
                     if(this.health <= 0){
@@ -1433,6 +1436,7 @@
                 scene.ui.offsetDirection = vec2(1,0);
                 scene.ui.spacing = 1.1;
                 if(scene.ui.button("End Turn",0,-tileSize*0.5)){
+                    gridHighlights.setAll(false);
                     selected.attacked = selected.attackCount;
                     selected.moved = selected.movementSpeed;
                     selected.note("End turn!")
@@ -1591,6 +1595,12 @@
                     }
                 }
             }
+
+            this.setAll =function(v){
+                for(let i = 0; i < w * h; i++){
+                    data[i] = v;
+                }
+            }
             this.quadraticToGrid = function(a,b,c){
                 let x = 0;
                 let y = 0;
@@ -1723,6 +1733,8 @@
             let delay = turnDelay;
 
             function next(){
+                setTimeout(next,delay);
+                game.tick += 1;
 
                 for(let turn of actors){
                     turn.active = false;
@@ -1748,7 +1760,6 @@
                     }
 
                     if(current.hero && (current.canMove() || current.canAttack() ) ){
-                        setTimeout(next,turnDelay);
                         return;
                     } 
 
@@ -1779,15 +1790,10 @@
                         }
                     }
                     
-                    setTimeout(next,delay);
                 }else{
                     console.log("Next turn, all actors moved")
-                    for(let actor of actors){
-                        actor.steps = 0;
-                        actor.moved = 0;
-                        actor.attacked = 0;
-                    }
-                    setTimeout(nextTurn,turnDelay);
+                    resetTurn();
+                    cursor = 0;
                 }
             }
 
@@ -1795,7 +1801,18 @@
 
         }
 
+        function resetTurn(){
+            for(let actor of actors){
+                actor.steps = 0;
+                actor.moved = 0;
+                actor.attacked = 0;
+            }
+        }
+
         function nextWave(){
+
+            resetTurn();
+
             wave += 1
             if(wave > 10){
                 wave = 1;
@@ -1813,6 +1830,7 @@
             }
 
             if(wave % 5 === 0){
+                game.inStore = true;
                 //monsterRollOut.innerHTML += '<h3>Traveling Merchant</h3> Anything of interest? <br/><br/>';
 
                 for(let i = 0; i < 4; i++){
@@ -1912,8 +1930,9 @@
             mouse.gy = gy;
             
             render();
-
         })
+
+
 
         canvas.addEventListener('mousedown',function(e){
             var rect = canvas.getBoundingClientRect();
@@ -1926,9 +1945,7 @@
                 if(target){
                     if(target == selected){
                         selected = false;
-                        gridHighlights.loop((x,y,v) => {
-                            gridHighlights.set(x,y,false);
-                        });
+                        gridHighlights.setAll(false);
                         return;
                     }
                     selected.attemptAttack(target);
@@ -1936,6 +1953,9 @@
                 }
                 if(gridHighlights.get(gx,gy) === 1){
                     selected.move(gx,gy);
+                    if(selected.canMove()){
+                        gridHighlights.floodFill(gx,gy,1,isSolidOccupied,1);
+                    }
                 }else if(gridHighlights.get(gx,gy) === 2){
                     const target = grid.get(gx,gy);
                     if(target.health !== undefined){
@@ -1968,9 +1988,9 @@
                 
                 if(selected){
                     if(selected.canMove()){
-                        gridHighlights.floodFill(gx,gy,1,isSolidOccupied,selected.movementSpeed-selected.moved);
+                        gridHighlights.floodFill(gx,gy,1,isSolidOccupied,1);
                     }else if(selected.canAttack()){
-                        gridHighlights.floodFill(gx,gy,2,isSolidOccupied,selected.attackRange);
+                        selected.showAttackRange();
                     }
                 }
 
@@ -1990,6 +2010,8 @@
         function Game(){
             this.boundingWidth = tileSize * 8;
             this.boundingHeight = tileSize * 8;
+            this.inStore = false;
+            this.tick = 0;
             this.render = function(ctx){
                 render();
                 //ctx.strokeRect(0,0,this.boundingWidth,this.boundingHeight);
@@ -2072,11 +2094,11 @@
                 if(scene.ui.buttonUI("Put in Backpack")){
                     player.slots[1] = false;
                 };
-                
+
+                ctx.fillText(game.tick,50,50);
+
             }
         }
-
-        scene.add(new Game());
 
     </script>
 </body>
