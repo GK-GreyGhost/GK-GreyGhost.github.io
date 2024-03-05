@@ -314,6 +314,24 @@
             gridHighlights.set(x,y,'rgba(0,0,0,0.0)');    
         });
 
+        let baseData = {
+            gold:0,
+        };
+
+        if(localStorage.save){
+            baseData = JSON.parse(localStorage.save);
+        }
+
+        const save = new Proxy(baseData,{
+            set(target, key, value) {
+                target[key] = value;
+                localStorage.save = JSON.stringify(target);
+            },
+            get(target,key){
+                return target[key];
+            }
+        });
+
         let selected;
         let actors = [];
         let messageLog = [];
@@ -539,8 +557,8 @@
                 Great_Axe:{
                     stats:"D20, Knockback +1",
                     special:"Move -2, Two Handed",
-                    cost:0,
-                    sell:0
+                    cost:100,
+                    sell:50
                 },
                 Scythe:{
                     stats:"D8, Pierce",
@@ -644,20 +662,25 @@
                     cost:15,
                     sell:10
                 },
+            },
+            Armor:{
                 Gas_Mask:{
-                    type:"Equipable (Head)",
+                    type:"Equipable",
+                    slot:"Head",
                     effect:"grants resistance to Sleep trap, Gas and Smells",
                     cost:30,
                     sell:15
                 },
                 Basic_Armor:{
-                    type:"Equipable (Body)",
+                    type:"Equipable",
+                    slot:"Body",
                     effect:"Armor +1",
                     cost:50,
                     sell:25
                 },
                 Full_Plate_Armor:{
-                    type:"Equipable (Body)",
+                    type:"Equipable",
+                    slot:"Body",
                     effect:"Armor +2, Move -1",
                     cost:80,
                     sell:40
@@ -744,6 +767,14 @@
                     cooldown:3,
                     ability:"target loses next turn"
                 }
+            }
+        }
+
+        const item_lut = {};
+
+        for(let type in items){
+            for(let name in items[type]){
+                item_lut[name] = items[type][name];
             }
         }
 
@@ -2007,6 +2038,15 @@
         scene.start();
         nextTurn();
 
+        function lookup(item){
+            return item_lut[item];
+            for(let type in items){
+                if(items[type][item]){
+                    return items[type][item];
+                }
+            }
+        }
+
         function Game(){
             this.boundingWidth = tileSize * 8;
             this.boundingHeight = tileSize * 8;
@@ -2026,26 +2066,74 @@
 
                 ctx.font = '18px monospace';
                 ctx.fillStyle = '#000';
-                ctx.lineWidth = 1
+                ctx.lineWidth = 2
                 scene.ui.buttonWidth = tileSize * 2.5;
                 scene.ui.buttonHeight = tileSize * 0.25;
-                scene.ui.x = 0;
+                scene.ui.x = 5;
 
 
                 scene.ui.offsetDirection = vec2(0,1);
-                scene.ui.y = 0;
+                scene.ui.y = 5;
                 
-                scene.ui.button(area + ' - '+wave);
+                scene.ui.buttonUI(area + ' - '+wave);
                 scene.ui.y += scene.ui.buttonHeight;
 
-                scene.ui.button('Backpack');
-                scene.ui.spacing = 1.0;
+                scene.ui.buttonUI('Backpack');
+                scene.ui.spacing = 1;
                 let columnCount = 1;
+
                 for(let name in playerInventory){
+
+                    if(playerInventory[name].selected){
+                        scene.ui.color1 = '#f00';
+                        scene.ui.color2 = '#000';
+                    }
+
                     if(scene.ui.buttonUI( (playerInventory[name].selected?'> ':'')+name+': '+playerInventory[name].quantity)){
                         playerInventory[name].selected = !playerInventory[name].selected;
                         Mouse.left = false;
                     };
+
+                    scene.ui.color1 = '#000';
+                    scene.ui.color2 = '#fff';
+
+                    if(playerInventory[name].selected){
+                        scene.ui.step(0.1,0);
+                        if(items.equipment[name]){
+                            if(scene.ui.buttonUI("Equip Slot 1")){
+                                player.setWeapon(name,0);
+                                playerInventory[name].selected = false;
+                                Mouse.left = false;
+                            }
+                            if(scene.ui.buttonUI("Equip Slot 2")){
+                                player.setWeapon(name,1);
+                                playerInventory[name].selected = false;
+                                Mouse.left = false;
+                            };
+                        }
+                        if(items.Armor[name]){
+                            if(scene.ui.buttonUI("Equip on "+items.Armor[name].slot)){
+                                
+                            }
+                        }
+                        if(items.items[name] || items.Abilities[name]){
+                            scene.ui.buttonUI("Use");
+                        }
+                        if(item_lut[name].sell && scene.ui.buttonUI("Sell")){
+                            const item = lookup(name);
+                            if(item){
+                                playerInventory[name].quantity -= 1;
+                                if(playerInventory[name].quantity <= 0){
+                                    delete playerInventory[name];
+                                }
+                                console.log(item);
+                                playerInventory.gold = playerInventory.gold  || {quantity:0,selected:false};
+                                playerInventory.gold.quantity += item.sell;
+                                Mouse.left = false;
+                            }
+                        }
+                        scene.ui.step(-0.1,0);
+                    }
                     /*
                     if(scene.ui.y > tileSize * 8){
                         scene.ui.x += scene.ui.buttonWidth + tileSize * 0.25;
@@ -2054,6 +2142,7 @@
                     }
                     */
                 }
+                
                 this.boundingWidth = tileSize * 8// + columnCount * (scene.ui.buttonWidth + tileSize * 0.25);
 
                 let y = tileSize;
@@ -2063,7 +2152,7 @@
                 }
 
                 scene.ui.x += scene.ui.buttonWidth;
-                scene.ui.y = scene.ui.buttonHeight * 2;
+                scene.ui.y = scene.ui.buttonHeight * 2 + 5;
                 scene.ui.buttonUI("Equipped");
                 scene.ui.offsetDirection = vec2(1,0);
                 
@@ -2079,7 +2168,7 @@
                     player.slots[0] = false;
                 };
                 
-                scene.ui.x = scene.ui.buttonWidth;
+                scene.ui.x = scene.ui.buttonWidth + 5;
                 scene.ui.y += scene.ui.buttonHeight;
 
                 if(scene.ui.buttonUI("Slot 2 - "+(player.slots[1]||"empty"))){

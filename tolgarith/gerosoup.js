@@ -778,6 +778,10 @@ class GRUI{
     button(text,nx=this.x,ny=this.y,mpx=this.viewport.mouse.x,mpy=this.viewport.mouse.y){
         return this.buttonUI(text,nx,ny,mpx,mpy);
     }
+    step(x,y){
+        this.x += this.buttonWidth * x;
+        this.y += this.buttonHeight * y;
+    }
     buttonUI(text,nx=this.x,ny=this.y,mpX=Mouse.position.x,mpY=Mouse.position.y){
         const ctx = this.viewport.ctx;
         this.x = nx;
