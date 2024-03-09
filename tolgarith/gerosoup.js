@@ -37,6 +37,9 @@ Array.prototype.remove = function(item){
     return false;
 }
 
+Array.prototype.random = function(){
+    return this[Math.floor(Math.random()*this.length)];
+}
 window.addEventListener('contextmenu',function(e){
     e.preventDefault();
     return false;
@@ -147,6 +150,16 @@ CanvasRenderingContext2D.prototype.setFontSize = function(n){
 CanvasRenderingContext2D.prototype.setFontName = function(n){
     this.fontName = n;
     this.font = this.fontSize + 'px '+this.fontName;
+}
+
+Object.prototype.random = function(){
+    const k = Object.keys(this);
+    return this[k[Math.floor(Math.random()*k.length)]];
+}
+
+Object.prototype.randomKey = function(){
+    const k = Object.keys(this);
+    return k[Math.floor(Math.random()*k.length)];
 }
 
 //===============================================
@@ -813,15 +826,15 @@ class GRUI{
         this.x = nx;
         this.y = ny;
 
-        ctx.fillStyle = this.color2;
+        ctx.fillStyle = this.color1;
         const size = ctx.measureText(text);
         const height = Math.abs(size.actualBoundingBoxAscent + size.actualBoundingBoxDescent);
         const width = size.width;
-        ctx.fillRect(this.x,this.y,width,height);
-        ctx.fillStyle = this.color1;
+        ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
+        ctx.fillStyle = this.color2;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text,this.x+width*0.5,this.y+this.buttonHeight*0.5);
+        ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y + this.buttonHeight * 0.5 + 1);
 
         this.y += this.buttonHeight * this.offsetDirection.y * this.spacing;
         this.x += this.buttonWidth * this.offsetDirection.x * this.spacing;

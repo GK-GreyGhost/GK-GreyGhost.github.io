@@ -11,7 +11,6 @@
             margin:0px;
             box-sizing: border-box;
             font-family:helvetica;
-            text-transform: uppercase;
         }
 
         body{
@@ -53,10 +52,8 @@
             left:0px;
             background:#fff;
             overflow:hidden;
-            width:50px;
-            height:50px;
-            border-radius:100px;
             border:solid 1px #000;
+            opacity:0.25;
         }
 
         input{
@@ -65,13 +62,6 @@
             padding:5px;
         }
 
-        .lineContainer:hover{
-            opacity:1.0;
-            width:auto;
-            height:auto;
-            border-radius:0px;
-
-        }
 
         .lineContainer div, .lineContainer input{
             padding:2px;
@@ -107,7 +97,7 @@
 
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img,0,0);
-                        ctx.font = '50px ariel';
+                        ctx.font = '20px ariel';
                         ctx.textAlign = 'center';
                         const lineContainer = document.createElement('div');
                         lineContainer.className = 'lineContainer';
@@ -122,7 +112,7 @@
                             const div = document.createElement('div');
                             lineContainer.appendChild(div);
 
-                            const input = document.createElement('input');
+                            const input = document.createElement('textarea');
                             div.appendChild(input);
                             
                             const position = document.createElement('input');
@@ -132,7 +122,7 @@
                             div.appendChild(position);
 
                             const font = document.createElement('input');
-                            font.value = 'bold 50px ariel';
+                            font.value = 'bold 20px ariel';
                             font.addEventListener('keyup',redraw);
 
                             div.appendChild(font);
@@ -152,7 +142,7 @@
                             redraw();
                         }
 
-                        canvas.addEventListener('mousedown',function(e){
+                        document.body.addEventListener('mousedown',function(e){
                             const x = e.pageX;
                             const y = e.pageY;
                             Mouse.x = x;
@@ -165,7 +155,7 @@
                             }
                         },false);
 
-                        canvas.addEventListener('mousemove',function(e){
+                        document.body.addEventListener('mousemove',function(e){
 
                             const x = e.pageX;
                             const y = e.pageY;
@@ -181,7 +171,7 @@
 
                         },false);
 
-                        canvas.addEventListener('mouseup',function(){
+                        document.body.addEventListener('mouseup',function(){
                             selected = false;
                         },false);
 
@@ -195,19 +185,26 @@
                                 const position = item.children[1].value.split(' ');
                                 
                                 const x = parseFloat(position[0],10);
-                                const y = parseFloat(position[1],10);
+                                let y = parseFloat(position[1],10);
 
                                 ctx.font = item.children[2].value;
                                 ctx.fillStyle = item.children[3].value;
-                                ctx.fillText(item.children[0].value,x,y);
-                                
-                                const metrics = ctx.measureText(item.children[0].value);
-                                const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-                                const width = metrics.width;
+                                const text = item.children[0].value.split('\n');
+                                for(let line of text){
+                                    const metrics = ctx.measureText(line);
+                                    const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+                                    const width = metrics.width;
+                                    ctx.lineWidth = 5;
+                                    ctx.strokeStyle = '#000';
+                                    ctx.fillStyle = '#fff';
+                                    ctx.strokeText(line,x,y);
+                                    ctx.fillText(line,x,y);
+                                    y += height * 1.5;
+                                    boundingBoxes.push({
+                                        x:x-width*0.5,y:y-height*2,width,height,element:item,positionElem:item.children[1]
+                                    });
+                                }
 
-                                boundingBoxes.push({
-                                    x,y:y-height,width,height,element:item,positionElem:item.children[1]
-                                });
                             }
                             /*
                             ctx.lineWidth = 3;
@@ -216,7 +213,6 @@
                                 ctx.strokeRect(box.x,box.y,box.width,box.height);
                             }
                             */
-
                         }
 
                     }

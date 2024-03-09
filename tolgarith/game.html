@@ -504,7 +504,8 @@
                     stats:"D6, Range 3 LoS",
                     special:"Uses arrows, can retrieve, comes with 3 arrows",
                     cost:40,
-                    sell:20
+                    sell:20,
+                    ammo:"Arrow"
                 },
                 Shield:{
                     stats:"Armor +2",
@@ -576,7 +577,8 @@
                     stats:"D12, Range 4",
                     special:"uses bolts, can retrieve, comes with 3 bolts",
                     cost:80,
-                    sell:40
+                    sell:40,
+                    ammo:"Bolt"
                 },
                 Bolt_Action_Rifle:{
                     stats:"D20, Range 8",
@@ -588,7 +590,8 @@
                     stats:"D12, Range 4",
                     special:"consumes 1 bullet, must reload after 6 shots (consumes turn)",
                     cost:140,
-                    sell:70
+                    sell:70,
+                    ammo:"Bullet"
                 },
                 Claws:{
                     stats:"2D6",
@@ -617,6 +620,12 @@
                     sell:5
                 },
                 Arrow:{
+                    type:"Ammo",
+                    effect:"Reusable, Enchantable",
+                    cost:2,
+                    sell:2
+                },
+                Bolt:{
                     type:"Ammo",
                     effect:"Reusable, Enchantable",
                     cost:2,
@@ -1070,12 +1079,17 @@
             this.slots = [false,false,false,false];
             this.active = false;
             this.activeWeapon;
-            this.attacKRangeLoS = false;
+            this.attackRangeLoS = false;
+            this.inventory = []
 
             this.actions = {
                 move:ActionMove,
                 push:ActionPush
             };
+
+            this.showMoveGrid = function(){
+                gridHighlights.floodFill(this.position.x,this.position.y,1,isSolidOccupied,1);
+            }
 
             this.showAttackRange = function(){
                 gridHighlights.loop((x,y,v) => {
@@ -1133,30 +1147,32 @@
 
             this.navCloser = function(){
                 let lowest = Infinity;
-                let dir = vec2(0,0);
+                let dir = V2.cardinal.random();
                 for(let d of V2.cardinal){
                     const direction = vec2(this.position.x+d.x,this.position.y+d.y);
                     const n = gridNav.get(direction.x,direction.y,99);
-                    if(n < lowest){
+                    if(n !== false && n < lowest){
                         lowest = n;
                         dir = d;
                     }
                 }
+                this.note(dir);
                 this.moveDirection(dir);
                 return this.distance(gridNav.target.x,gridNav.target.y);
             }
 
             this.navFurther = function(){
                 let highest = -Infinity;
-                let dir = vec2(0,0);
+                let dir = V2.cardinal.random();
                 for(let d of V2.cardinal){
                     const direction = vec2(this.position.x+d.x,this.position.y+d.y);
-                    const n = gridNav.get(direction.x,direction.y,99);
-                    if(n > highest){
+                    const n = gridNav.get(direction.x,direction.y,0);
+                    if(n !== false && n > highest){
                         highest = n;
                         dir = d;
                     }
                 }
+                this.note(dir);
                 this.moveDirection(dir);
                 return this.distance(gridNav.target.x,gridNav.target.y);
             }
@@ -1172,7 +1188,7 @@
             }
             this.note = function(n){
                 note(n);
-                scene.add(new FloatingText(n,this.position.x*tileSize+tileSize*0.5,this.position.y * tileSize));
+                scene.add(new FloatingText(n,this.position.x*tileSize+tileSize*0.5,this.position.y * tileSize+Math.random()*20-10));
             }
             this.remove = function(){
                 grid.set(this.position.x,this.position.y,0);
@@ -1180,7 +1196,6 @@
                 actors.splice(i,1);
                 scene.remove(this);
                 this.note(this.name + ' died');
-                this.note("REMOVE MEEE");
             };
             this.shake = function(n=0.25){
                 this.displayPosition.x += Math.random() * n - (n * 0.5);
@@ -1202,12 +1217,10 @@
                     if(this.health <= 0){
                         this.note(this.name + " took "+damage+"dmg! they died");
                         if(this.hero){
+                            window.location.reload();
                             return;
                         }
-                        const self = this;
-                        setTimeout(() => {
-                            self.remove();
-                        },500);
+                        this.remove();
                         this.position.x += Math.floor(Math.random() * 20) - 10;
                         this.position.y += Math.floor(Math.random() * 20) - 10;
                     }else{
@@ -1217,7 +1230,10 @@
             };
 
             this.attack = function(target){
-                target.hurt(this,rand(this.attackDice+1));
+                if(this.canAttack()){
+                    this.attacked += 1;
+                    target.hurt(this,rand(this.attackDice)+1);
+                }
             }
 
             this.attemptAttack = function(target){
@@ -1237,12 +1253,14 @@
             this.move = function(x,y){
 
                 if(grid.get(x,y)){
+                    this.moved += 1; //if you don't eat a move for a fail AI get's trapped
                     return;
                 }
 
                 var dis = Math.max(Math.abs(x-this.position.x), Math.abs(y-this.position.y));
                 
                 if(dis > this.movementSpeed-this.moved){
+                    this.moved += 1; //if you don't eat a move for a fail AI get's trapped
                     return;
                 }
 
@@ -1321,8 +1339,8 @@
             var g = grid.quadraticToGrid(a,b,c);
             grid.quadraticSet(a,b,c,player);
             player.position.x = g.x;
-            player.setWeapon('Sword',0);
             player.setWeapon('Bow',1);
+            player.setWeapon('Sword',0);
 
             player.position.y = g.y;
             player.displayPosition.x = g.x;
@@ -1344,9 +1362,7 @@
             ctx.lineWidth = 1;
             ctx.fillStyle = '#000';
             ctx.lineWidth = 1;
-
-            ctx.fillCircle(mouse.x,mouse.y,5);
-
+            
             grid.loop((x,y,v) => {
                 ctx.drawImage(imgs.brick,0,0,16,16,x*s,y*s,s,s);
             });
@@ -1368,9 +1384,9 @@
                     }
 
                     if(icon_lut[v]){
-                        ctx.globalAlpha = 0.2;
-                        ctx.drawImage(imgs.shadow,0,0,16,16,x*s+hs-hps,y*s+hs-hps+8,pieceSize,pieceSize);
-                        ctx.globalAlpha = 1.0;
+                        //ctx.globalAlpha = 0.2;
+                        //ctx.drawImage(imgs.shadow,0,0,16,16,x*s+hs-hps,y*s+hs-hps+8,pieceSize,pieceSize);
+                        //ctx.globalAlpha = 1.0;
                         ctx.drawImage(icon_lut[v],0,0,16,16,x*s+hs-hps,y*s+hs-hps,pieceSize,pieceSize);
                     }else if(v.image){
 
@@ -1390,6 +1406,11 @@
                         if(v.health <= 0){
                             ctx.globalAlpha = 0.25;
                         }
+
+                        ctx.fillStyle = 'rgba(255,0,0,0.25)';
+                        grid.floodDraw(x,y,isSolidOccupied,v.attackRange);
+
+                        ctx.font = '16px monospace';
                         ctx.drawImage(v.image,0,0,16,16,px,py,pieceSize,pieceSize);
                         ctx.globalAlpha = 1.0;
 
@@ -1404,8 +1425,8 @@
                         ctx.outlineText(v.attackDice,px+pieceSize,py+pieceSize);
                         ctx.fillStyle = 'grey';
                         ctx.outlineText(v.armor,px,py+pieceSize);
-                        const hpy = 3;
-                        
+                        const hpy = 5;
+                        py += 10;
                         ctx.strokeRect(px,py+pieceSize, pieceSize,hpy);
                         ctx.fillRect(px,py+pieceSize, (v.health/v.maxHealth) * pieceSize,hpy);
                         ctx.globalAlpha = 1.0;
@@ -1425,12 +1446,12 @@
                 }
             });
 
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
             gridNav.loop((x,y,v) => {
                 const px = x*s+hs;
                 const py = y*s+hs;
-                if(v !== 99){
-                    ctx.fillCircle(px,py,v);
-                }
+                ctx.outlineText(v,px,py);
             });
 
             if(selected){
@@ -1471,8 +1492,6 @@
                     selected.attacked = selected.attackCount;
                     selected.moved = selected.movementSpeed;
                     selected.note("End turn!")
-                }
-                if(scene.ui.button("Toggle Inventory")){
                 }
             }
             //ctx.strokeStyle = 'rgba(0,0,0,0.25)';
@@ -1527,7 +1546,7 @@
             this.navFill = function(x,y,isSolid){
 
                 this.loop((x,y) => {
-                    this.set(x,y,99);
+                    this.set(x,y,false);
                 })
 
                 let visited = {};
@@ -1571,6 +1590,52 @@
                     this.set(next[0],next[1],next[2]);
                 }
                 this.set(x,y,0);
+            };
+
+            this.floodDraw = function(x,y,isSolid,r=1){
+                let visited = {};
+                let frontlines = [];
+                
+                if(r <= 0){
+                    return;
+                }
+
+                function push(x,y,dis){
+                    if(dis >= r){
+                        return;
+                    } 
+                    const id = (x + y * w).toString();
+                    if(!visited[id] && !isSolid(x,y)){
+                        visited[id] = true;
+                        frontlines.push([x,y,dis+1]);
+                    }
+                }
+
+                push(x+1,y,0);
+                push(x-1,y,0);
+                push(x,y+1,0);
+                push(x,y-1,0);
+
+                /*
+                push(x+1,y+1,0);
+                push(x-1,y-1,0);
+                push(x-1,y+1,0);
+                push(x+1,y-1,0);
+                */
+                while(frontlines.length>0){
+                    var next = frontlines.shift();
+                    push(next[0]+1,next[1],next[2]);
+                    push(next[0]-1,next[1],next[2]);
+                    push(next[0],next[1]+1,next[2]);
+                    push(next[0],next[1]-1,next[2]);
+                    /*
+                    push(next[0]+1,next[1]+1,next[2]);
+                    push(next[0]-1,next[1]-1,next[2]);
+                    push(next[0]-1,next[1]+1,next[2]);
+                    push(next[0]+1,next[1]-1,next[2]);
+                    */
+                   ctx.fillRect(next[0]*tileSize,next[1]*tileSize,tileSize,tileSize);
+                }
             };
 
             this.floodFill = function(x,y,v,isSolid,r=1){
@@ -1766,7 +1831,7 @@
             function next(){
                 setTimeout(next,delay);
                 game.tick += 1;
-
+                game.actorCursor = cursor;
                 for(let turn of actors){
                     turn.active = false;
                 }
@@ -1785,14 +1850,11 @@
                         return;
                     }
 
-                    current.steps += 1;
-                    if(current.steps > 30){
-                        return;
-                    }
-
+                    /* comment / uncomment for auto play
                     if(current.hero && (current.canMove() || current.canAttack() ) ){
                         return;
                     } 
+                    //*/
 
                     if(!current.canMove() && !current.canAttack()){
                         cursor += 1;
@@ -1801,24 +1863,51 @@
                         actors[cursor].active = true;
                         const target = current.getClosestTarget();
                         gridNav.navFill(target.position.x,target.position.y,isSolidOccupied);
-                        
-                        let distance = current.distance(target.position.x,target.position.y);
-                        if(distance > current.attackRange){
-                            distance = current.navCloser();
-                        }else if(current.attackRange === distance){
-                       
-                        }else{
-                            distance = current.navFurther();
-                        }
 
-
-                        if(distance <= current.attackRange){
-                            target.hurt(current,Math.floor(Math.random()*current.attackDice+1));
-                        }else{
-                            if(!current.canMove()){
+                        if(this.health / this.maxHealth < 0.5){
+                            if(current.canMove()){
+                                current.navFurther();
+                            }else{
+                                const healAmount = rand(4)+1;
+                                current.health += healAmount;
+                                currnt.note('retreated and healed '+healAmount);
                                 current.attacked = current.attackCount;
+                                current.moved = current.movementSpeed;
                             }
+                            return;
                         }
+
+                        //todo calculate safest tiles and try to end turn on safest tile
+
+                        if(current.canAttack()){
+                            //adjust distance
+                            let distance = current.distance(target.position.x,target.position.y);
+                            if(distance > current.attackRange){
+                                distance = current.navCloser();
+                                current.note("move closer");
+                            }else if(current.attackRange === distance){
+                                current.note("good range");
+                                current.moved = current.movementSpeed;
+                            }else{
+                                current.note("move further");
+                                distance = current.navFurther();
+                            }
+
+                            //attack if possible
+                            if(distance <= current.attackRange){
+                                current.attack(target);
+                                current.note("attack!");
+                            }else if(!current.canMove()){ // if out of range, end turn
+                                current.note("end turn");
+                                current.attacked = current.attackCount;
+                                cursor += 1;
+                            }
+                        }else{
+                            current.navFurther();
+                        }
+
+
+                    
                     }
                     
                 }else{
@@ -1845,6 +1934,16 @@
             resetTurn();
 
             wave += 1
+
+            if(localStorage.furthest){
+                const f = parseInt(localStorage.furthest,10);
+                if(wave > f){
+                    localStorage.furthest = wave;
+                }
+            }else{
+                localStorage.furthest = wave;
+            }
+
             if(wave > 10){
                 wave = 1;
                 if(area === 'Forest'){
@@ -1862,6 +1961,22 @@
 
             if(wave % 5 === 0){
                 game.inStore = true;
+                game.storeItems = []
+                const n = rand(4);
+                if(n === 0 || n === 1){
+                    game.storeItems.push(items.item.randomKey());
+                    game.storeItems.push(items.item.randomKey());
+                    game.storeItems.push(items.item.randomKey());
+                    game.storeItems.push(items.weapon.randomKey());
+                }else if(n === 2){
+                    game.storeItems.push(items.item.randomKey());
+                    game.storeItems.push(items.item.randomKey());
+                    game.storeItems.push(items.spell.randomKey());
+                    game.storeItems.push(items.spell.randomKey());
+                }else if(n === 3){
+                    
+                }
+
                 //monsterRollOut.innerHTML += '<h3>Traveling Merchant</h3> Anything of interest? <br/><br/>';
 
                 for(let i = 0; i < 4; i++){
@@ -1927,12 +2042,10 @@
             actor.name = next;
             actor.iq = ({Dumb:1,mid:2,Smart:3})[monster.int]; //this is a cursed line of code lol
             console.log(monster.attack);
-            actor.attackDice = parseInt(monster.attack.replace(/\D+/g, '').split(' ').shift(),10);
-            if(monster.attack.toLowerCase().indexOf('r') !== -1){
-                actor.attackRange = parseInt(monster.attack.replace(/\D+/g, '').split(' ').pop()||1,10);
-            }else{
-                actor.attackRange = 1;
-            }
+            const stats = parseWeaponStats(monster.attack);
+            actor.attackDice = stats.damage;
+            actor.attackRange = stats.range || 1;
+            actor.attackRangeLoS = stats.los || false;
             actor.position = gp;
             actor.displayPosition.x = gp.x;
             actor.displayPosition.y = gp.y;
@@ -1963,8 +2076,6 @@
             render();
         })
 
-
-
         canvas.addEventListener('mousedown',function(e){
             var rect = canvas.getBoundingClientRect();
             const x = mouse.x;
@@ -1973,6 +2084,7 @@
             const gy = mouse.gy;
             if(selected){
                 const target = grid.get(gx,gy);
+                
                 if(target){
                     if(target == selected){
                         selected = false;
@@ -1983,20 +2095,29 @@
                     return;
                 }
                 if(gridHighlights.get(gx,gy) === 1){
+                    gridHighlights.setAll(false);
                     selected.move(gx,gy);
                     if(selected.canMove()){
-                        gridHighlights.floodFill(gx,gy,1,isSolidOccupied,1);
+                        selected.note("can move");
+                        selected.showMoveGrid();
                     }
                 }else if(gridHighlights.get(gx,gy) === 2){
+                    gridHighlights.setAll(false);
                     const target = grid.get(gx,gy);
                     if(target.health !== undefined){
                         selected.attack(target);
+                        if(selected.canAttack()){
+                            selected.showAttackRange();
+                        }else{
+                            if(selected.canMove()){
+                                selected.showMoveGrid();
+                            }else{
+                                selected = false;
+                            }
+                        }
                     }
                 }
-                gridHighlights.loop((x,y,v) => {
-                    gridHighlights.set(x,y,false);
-                });
-                selected = false;
+
             }else{
                 
                 selected = grid.get(gx,gy);
@@ -2026,7 +2147,7 @@
                 }
 
             }
-        })
+        });
 
         function isSolidOccupied(x,y){
             if(x < 0 || x > 7) return true;
@@ -2050,6 +2171,8 @@
         function Game(){
             this.boundingWidth = tileSize * 8;
             this.boundingHeight = tileSize * 8;
+            this.showBackpack = false;
+            this.showEquipped = false;
             this.inStore = false;
             this.tick = 0;
             this.render = function(ctx){
@@ -2064,6 +2187,10 @@
             }
             this.renderUI = function(ctx){
 
+                ctx.save();
+
+                ctx.translate(0.5,0.5);
+
                 ctx.font = '18px monospace';
                 ctx.fillStyle = '#000';
                 ctx.lineWidth = 2
@@ -2075,116 +2202,145 @@
                 scene.ui.offsetDirection = vec2(0,1);
                 scene.ui.y = 5;
                 
-                scene.ui.buttonUI(area + ' - '+wave);
+                scene.ui.textBG(area + ' - '+wave);
                 scene.ui.y += scene.ui.buttonHeight;
 
-                scene.ui.buttonUI('Backpack');
+                if(scene.ui.buttonUI('Backpack')){
+                    game.showBackpack = !game.showBackpack;
+                    Mouse.left = false;
+                };
+
                 scene.ui.spacing = 1;
                 let columnCount = 1;
 
-                for(let name in playerInventory){
+                if(game.showBackpack){
 
-                    if(playerInventory[name].selected){
-                        scene.ui.color1 = '#f00';
-                        scene.ui.color2 = '#000';
-                    }
+                    for(let name in playerInventory){
 
-                    if(scene.ui.buttonUI( (playerInventory[name].selected?'> ':'')+name+': '+playerInventory[name].quantity)){
-                        playerInventory[name].selected = !playerInventory[name].selected;
-                        Mouse.left = false;
-                    };
-
-                    scene.ui.color1 = '#000';
-                    scene.ui.color2 = '#fff';
-
-                    if(playerInventory[name].selected){
-                        scene.ui.step(0.1,0);
-                        if(items.equipment[name]){
-                            if(scene.ui.buttonUI("Equip Slot 1")){
-                                player.setWeapon(name,0);
-                                playerInventory[name].selected = false;
-                                Mouse.left = false;
-                            }
-                            if(scene.ui.buttonUI("Equip Slot 2")){
-                                player.setWeapon(name,1);
-                                playerInventory[name].selected = false;
-                                Mouse.left = false;
-                            };
+                        if(playerInventory[name].selected){
+                            scene.ui.color1 = '#f00';
+                            scene.ui.color2 = '#000';
                         }
-                        if(items.Armor[name]){
-                            if(scene.ui.buttonUI("Equip on "+items.Armor[name].slot)){
-                                
-                            }
-                        }
-                        if(items.items[name] || items.Abilities[name]){
-                            scene.ui.buttonUI("Use");
-                        }
-                        if(item_lut[name].sell && scene.ui.buttonUI("Sell")){
-                            const item = lookup(name);
-                            if(item){
-                                playerInventory[name].quantity -= 1;
-                                if(playerInventory[name].quantity <= 0){
-                                    delete playerInventory[name];
+
+                        if(scene.ui.buttonUI( (playerInventory[name].selected?'> ':'')+name+': '+playerInventory[name].quantity)){
+                            playerInventory[name].selected = !playerInventory[name].selected;
+                            Mouse.left = false;
+                        };
+
+                        scene.ui.color1 = '#000';
+                        scene.ui.color2 = '#fff';
+
+                        if(playerInventory[name].selected){
+                            scene.ui.step(0.1,0);
+                            if(items.equipment[name]){
+                                if(scene.ui.buttonUI("Equip Slot 1")){
+                                    player.setWeapon(name,0);
+                                    playerInventory[name].selected = false;
+                                    Mouse.left = false;
                                 }
-                                console.log(item);
-                                playerInventory.gold = playerInventory.gold  || {quantity:0,selected:false};
-                                playerInventory.gold.quantity += item.sell;
-                                Mouse.left = false;
+                                if(scene.ui.buttonUI("Equip Slot 2")){
+                                    player.setWeapon(name,1);
+                                    playerInventory[name].selected = false;
+                                    Mouse.left = false;
+                                };
                             }
+                            if(items.Armor[name]){
+                                if(scene.ui.buttonUI("Equip on "+items.Armor[name].slot)){
+                                    
+                                }
+                            }
+                            if(items.items[name] || items.Abilities[name]){
+                                scene.ui.buttonUI("Use");
+                            }
+                            if(item_lut[name].sell && scene.ui.buttonUI("Sell")){
+                                const item = lookup(name);
+                                if(item){
+                                    playerInventory[name].quantity -= 1;
+                                    if(playerInventory[name].quantity <= 0){
+                                        delete playerInventory[name];
+                                    }
+                                    playerInventory.gold = playerInventory.gold  || {quantity:0,selected:false};
+                                    playerInventory.gold.quantity += item.sell;
+                                    Mouse.left = false;
+                                }
+                            }
+                            scene.ui.step(-0.1,0);
                         }
-                        scene.ui.step(-0.1,0);
+                        /*
+                        if(scene.ui.y > tileSize * 8){
+                            scene.ui.x += scene.ui.buttonWidth + tileSize * 0.25;
+                            scene.ui.y = scene.ui.buttonHeight;
+                            columnCount += 1;
+                        }
+                        */
                     }
-                    /*
-                    if(scene.ui.y > tileSize * 8){
-                        scene.ui.x += scene.ui.buttonWidth + tileSize * 0.25;
-                        scene.ui.y = scene.ui.buttonHeight;
-                        columnCount += 1;
-                    }
-                    */
                 }
                 
                 this.boundingWidth = tileSize * 8// + columnCount * (scene.ui.buttonWidth + tileSize * 0.25);
 
-                let y = tileSize;
-                for(let item of messageLog){
-                    ctx.fillText(item,tileSize,y);
-                    y += tileSize * 0.5;
+                let y = 15;
+                let x = canvas.width - 15;
+                let i = 0;
+                ctx.textAlign = 'right';
+                ctx.fillText("Turn Order",x,y);
+                y += 15;
+                for(let actor of actors){
+                    if(i === game.actorCursor){
+                        ctx.fillText("=> "+actor.name,x,y);
+                    }else{
+                        ctx.fillText(actor.name,x,y);
+                    }
+                    y += 15;
+                    i += 1;
+                }
+                y += 30;
+                for(let i = 10; i >= 1; i--){
+                    let item = messageLog[messageLog.length-11+i];
+                    ctx.fillText(item||'',canvas.width - 10,y);
+                    y += 20;
                 }
 
                 scene.ui.x += scene.ui.buttonWidth;
                 scene.ui.y = scene.ui.buttonHeight * 2 + 5;
-                scene.ui.buttonUI("Equipped");
-                scene.ui.offsetDirection = vec2(1,0);
-                
-                if(scene.ui.buttonUI("Slot 1 - "+(player.slots[0]||'empty'))){
-                    player.slots[0] = false;
-                };
-
-                if(scene.ui.buttonUI("Attack With")){
-                    player.setWeapon(player.slots[0],0);
-                    player.showAttackRange();
+                if(scene.ui.buttonUI("Held")){
+                    game.showEquipped = !game.showEquipped;
+                    Mouse.left = false;
                 }
-                if(scene.ui.buttonUI("Put in Backpack")){
-                    player.slots[0] = false;
-                };
-                
-                scene.ui.x = scene.ui.buttonWidth + 5;
-                scene.ui.y += scene.ui.buttonHeight;
+                if(game.showEquipped){
+                    scene.ui.offsetDirection = vec2(1,0);
+                    
+                    if(scene.ui.buttonUI("Slot 1 - "+(player.slots[0]||'empty'))){
+                        player.slots[0] = false;
+                    };
 
-                if(scene.ui.buttonUI("Slot 2 - "+(player.slots[1]||"empty"))){
-                    player.slots[1] = false;
+                    if(scene.ui.buttonUI("Attack With")){
+                        player.setWeapon(player.slots[0],0);
+                        player.showAttackRange();
+                    }
+                    if(scene.ui.buttonUI("Put in Backpack")){
+                        player.slots[0] = false;
+                    };
+                    
+                    scene.ui.x = scene.ui.buttonWidth + 5;
+                    scene.ui.y += scene.ui.buttonHeight;
+
+                    if(scene.ui.buttonUI("Slot 2 - "+(player.slots[1]||"empty"))){
+                        player.slots[1] = false;
+                    }
+
+                    if(scene.ui.buttonUI("Attack With")){
+                        player.setWeapon(player.slots[1],1);
+                        player.showAttackRange();
+                    };
+
+                    if(scene.ui.buttonUI("Put in Backpack")){
+                        player.slots[1] = false;
+                    };
                 }
+                ctx.fillStyle = '#000';
+                ctx.fillText('game tick: '+game.tick,scene.ui.buttonWidth *1.5,20);
+                ctx.restore();
 
-                if(scene.ui.buttonUI("Attack With")){
-                    player.setWeapon(player.slots[1],1);
-                    player.showAttackRange();
-                };
-
-                if(scene.ui.buttonUI("Put in Backpack")){
-                    player.slots[1] = false;
-                };
-
-                ctx.fillText(game.tick,50,50);
 
             }
         }
