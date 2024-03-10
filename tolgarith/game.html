@@ -1157,19 +1157,17 @@
                 gridHighlights.loop((x,y,v) => {
                     gridHighlights.set(x,y,false);
                 });
-                if(this.activeWeapon.los){
-                    gridHighlights.setRaycast(this.position.x,this.position.y,0,1,2,isSolidOccupied);
-                    gridHighlights.setRaycast(this.position.x,this.position.y,0,-1,2,isSolidOccupied);
-                    gridHighlights.setRaycast(this.position.x,this.position.y,1,0,2,isSolidOccupied);
-                    gridHighlights.setRaycast(this.position.x,this.position.y,-1,0,2,isSolidOccupied);
-                
-                    gridHighlights.setRaycast(this.position.x,this.position.y,1,1,2,isSolidOccupied);
-                    gridHighlights.setRaycast(this.position.x,this.position.y,-1,1,2,isSolidOccupied);
-                    gridHighlights.setRaycast(this.position.x,this.position.y,1,-1,2,isSolidOccupied);
-                    gridHighlights.setRaycast(this.position.x,this.position.y,-1,-1,2,isSolidOccupied);
-                
+                if(this.activeWeapon && this.activeWeapon.los){
+                    gridHighlights.setRaycast(this.position.x,this.position.y,0,1,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,0,-1,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,1,0,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,-1,0,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,1,1,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,-1,1,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,1,-1,2,isSolidOccupiedAttackable);
+                    gridHighlights.setRaycast(this.position.x,this.position.y,-1,-1,2,isSolidOccupiedAttackable);
                 }else{
-                    gridHighlights.floodFill(this.position.x,this.position.y,2,isSolidOccupied,this.attackRange);
+                    gridHighlights.floodFill(this.position.x,this.position.y,2,isSolidOccupiedAttackable,this.attackRange);
                 }
             }   
 
@@ -1239,7 +1237,7 @@
             }
 
             this.distance = function(x,y){
-                return Math.max(Math.abs(x-this.position.x),Math.abs(y-this.position.y));
+                return grid.distanceDiagonal(this.position.x,this.position.y,x,y);
             }
             this.moveDirection = function(dir){
                 this.move(
@@ -1522,7 +1520,6 @@
                 const x = mouse.gx;
                 const y = mouse.gy;
                 if(selected.canMove()){
-    
                     if (gridHighlights.get(x,y) === 1){
                         ctx.strokeStyle = Colors.moveOverlay;
                         ctx.beginPath();
@@ -1883,6 +1880,14 @@
                     return undefined;
                 }
                 return data[id];
+            }
+
+            this.distance = function(x1,y1,x2,y2){
+                return Math.max(Math.abs(x1-x2),Math.abs(y1-y2));
+            }
+
+            this.distanceDiagonal = function(x1,y1,x2,y2){
+                return Math.abs(x1-x2) + Math.abs(y1-y2);
             }
         }
 
@@ -2261,6 +2266,16 @@
             if(x < 0 || x > 7) return true;
             if(y < 0 || y > 7) return true;
             if(grid.get(x,y)) return true;
+            return false;
+        }
+
+        function isSolidOccupiedAttackable(x,y){
+            if(x < 0 || x > 7) return true;
+            if(y < 0 || y > 7) return true;
+            const g = grid.get(x,y);
+            if(g.health === undefined){
+                return true
+            }
             return false;
         }
 
