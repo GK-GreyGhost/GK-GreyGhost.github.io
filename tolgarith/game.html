@@ -48,6 +48,7 @@
 
         body{
             text-align:left;
+            background:#000;
         }
 
         hr{
@@ -298,11 +299,20 @@
 </div>
     <script>
         
+        const Colors = {
+            primary:"#fff",
+            secondary:"#000",
+            attackOverlay:"#f00",
+            moveOverlay:"#0f0"
+        }
+
         const vp = new Viewport(window.innerWidth,window.innerHeight);
         const canvas = vp.canvas;
-
         
         const scene = new Scene(vp);
+        scene.ui.color1 = Colors.primary;
+        scene.ui.color2 = Colors.secondary;
+
         vp.camera = scene.camera;
         
         const ctx = canvas.getContext('2d');
@@ -336,6 +346,8 @@
         let actors = [];
         let messageLog = [];
         const player = new BasePawn();
+        player.ai = 0;
+
         const imgs = {};
 
         const tileSize = 32*3;
@@ -698,83 +710,123 @@
             Abilities:{
                 Fireball:{
                     cooldown:1,
-                    ability:"D6 R3, Fire Damage, hits all nearby squares"
+                    ability:"D6 R3, Fire Damage, hits all nearby squares",
+                    cost:120,
+                    sell:60
                 },
                 Raise_Dead:{
                     cooldown:2,
-                    ability:"Corpse + D4 > 1, raise Controllable Zombie"
+                    ability:"Corpse + D4 > 1, raise Controllable Zombie",
+                    cost:120,
+                    sell:60
                 },
                 Chilling_Touch:{
                     cooldown:1,
-                    ability:"Target has half movement speed for 2 turns"
+                    ability:"Target has half movement speed for 2 turns",
+                    cost:120,
+                    sell:60
                 },
                 Draining_Kiss:{
                     cooldown:1,
-                    ability:"D6, caster gains damage as health; if target tranced, target loses next turn"
+                    ability:"D6, caster gains damage as health; if target tranced, target loses next turn",
+                    cost:120,
+                    sell:60
                 },
                 Trance:{
                     cooldown:2,
-                    ability:"R2 target involuntarily moves towards caster for 2 turns and cannot attack caster, ends early if target is hurt"
+                    ability:"R2 target involuntarily moves towards caster for 2 turns and cannot attack caster, ends early if target is hurt",
+                    cost:120,
+                    sell:60
                 },
                 Howl:{
                     cooldown:2,
-                    ability:"R2 Allies gain +2 Damage for 1 turn"
+                    ability:"R2 Allies gain +2 Damage for 1 turn",
+                    cost:120,
+                    sell:60
                 },
                 Blink:{
                     cooldown:3,
-                    ability:"teleport R5, if D4 > 3 can go through walls, otherwise end at wall"
+                    ability:"teleport R5, if D4 > 3 can go through walls, otherwise end at wall",
+                    cost:120,
+                    sell:60
                 },
                 Blessing:{
                     cooldown:3,
-                    ability:"R3 Heal target for D6, if target doesn't have health, give 1 hp barrier"
+                    ability:"R3 Heal target for D6, if target doesn't have health, give 1 hp barrier",
+                    cost:120,
+                    sell:60
                 },
                 Twist_Stone:{
                     cooldown:3,
-                    ability:"Create Stone or Remove Stone"
+                    ability:"Create Stone or Remove Stone",
+                    cost:120,
+                    sell:60
                 },
                 Reflect:{
                     cooldown:3,
-                    ability:"R2 Reflect next damage taken on attacker, up to R2"
+                    ability:"R2 Reflect next damage taken on attacker, up to R2",
+                    cost:120,
+                    sell:60
                 },
                 Shift_Position:{
                     cooldown:3,
-                    ability:"D4 > 1; exchange places with target, R4"
+                    ability:"D4 > 1; exchange places with target, R4",
+                    cost:120,
+                    sell:60
                 },
                 Pushing_Gale:{
                     cooldown:2,
-                    ability:"R2 throw target up to R4 away from caster (as far as possible)"
+                    ability:"R2 throw target up to R4 away from caster (as far as possible)",
+                    cost:120,
+                    sell:60
                 },
                 Pulling_Gale:{
                     cooldown:2,
-                    ability:"R4 pull target to caster"
+                    ability:"R4 pull target to caster",
+                    cost:120,
+                    sell:60
                 },
                 Resurrect:{
                     cooldown:1,
-                    ability:"Raise dead Ally to 50% health, drains casters health to 1"
+                    ability:"Raise dead Ally to 50% health, drains casters health to 1",
+                    cost:120,
+                    sell:60
                 },
                 Raise_Shadow:{
                     cooldown:2,
-                    ability:"Create controllable Shadow Creature, caster loses 5 hp"
+                    ability:"Create controllable Shadow Creature, caster loses 5 hp",
+                    cost:120,
+                    sell:60
                 },
                 Double_Time:{
                     cooldown:2,
-                    ability:"target gets 2 turns this round, back to back or additional turn after caster if already completed turn"
+                    ability:"target gets 2 turns this round, back to back or additional turn after caster if already completed turn",
+                    cost:120,
+                    sell:60
                 },
                 Mana_Bomb:{
                     cooldown:2,
-                    ability:"R2 place large bomb, explodes in 2 turns for D12 damage to tile and surrounding tiles"
+                    ability:"R2 place large bomb, explodes in 2 turns for D12 damage to tile and surrounding tiles",
+                    cost:120,
+                    sell:60
                 },
                 Blood_Bow:{
                     cooldown:1,
-                    ability:"R6, D6, caster loses 1hp "
+                    ability:"R6, D6, caster loses 1hp ",
+                    cost:120,
+                    sell:60
                 },
                 Anchor:{
                     cooldown:2,
-                    ability:"target cannot move for 1 turn"
+                    ability:"target cannot move for 1 turn",
+                    cost:120,
+                    sell:60
                 },
                 Gel:{
                     cooldown:3,
-                    ability:"target loses next turn"
+                    ability:"target loses next turn",
+                    cost:120,
+                    sell:60
                 }
             }
         }
@@ -784,6 +836,7 @@
         for(let type in items){
             for(let name in items[type]){
                 item_lut[name] = items[type][name];
+                item_lut[name].type = type;
             }
         }
 
@@ -998,7 +1051,7 @@
             const button = document.createElement('button');
             button.textContent = text;
             button.addEventListener('mousedown',function(){
-                note("Rolled a "+text+": "+(func()+1))
+                note("rolled a "+text+": "+(func()+1))
             });
            parent.appendChild(button);
         }
@@ -1076,6 +1129,7 @@
             this.moved = 0;
             this.attackRange = 0;
             this.iq = 0;
+            this.ai = 1;
             this.slots = [false,false,false,false];
             this.active = false;
             this.activeWeapon;
@@ -1086,6 +1140,14 @@
                 move:ActionMove,
                 push:ActionPush
             };
+
+            this.rest = function(){
+                const healAmount = rand(4)+1;
+                this.health += healAmount;
+                this.health = Math.min(this.health,this.maxHealth);
+                this.note('rested and healed '+healAmount);
+                this.attacked = this.attackCount;
+            }
 
             this.showMoveGrid = function(){
                 gridHighlights.floodFill(this.position.x,this.position.y,1,isSolidOccupied,1);
@@ -1156,7 +1218,6 @@
                         dir = d;
                     }
                 }
-                this.note(dir);
                 this.moveDirection(dir);
                 return this.distance(gridNav.target.x,gridNav.target.y);
             }
@@ -1208,7 +1269,7 @@
                 }
             }
             this.hurt = function(attacker,baseDamage){
-                let damage = baseDamage - this.armor;
+                let damage = baseDamage - Math.max(this.armor - 1,0);
                 this.shake(0.25);
                 if(damage <= 0){
                     this.note(attacker.name +"'s "+baseDamage+" bounces off "+this.name+"'s "+this.armor+" armor");
@@ -1231,9 +1292,19 @@
 
             this.attack = function(target){
                 if(this.canAttack()){
-                    this.attacked += 1;
-                    target.hurt(this,rand(this.attackDice)+1);
+                    gridHighlights.setAll(false);
+                    this.showAttackRange();
+                    if(gridHighlights.get(target.position.x,target.position.y)===2){
+                        this.attacked += 1;
+                        target.hurt(this,this.roll(this.attackDice)+1);
+                    }
                 }
+            }
+
+            this.roll = function(n){
+                const r = rand(n)+1;
+                this.note(this.name + " rolled d"+n+', lands on '+r);
+                return r;
             }
 
             this.attemptAttack = function(target){
@@ -1242,12 +1313,7 @@
                     return;
                 }
 
-                if(this.attackCount - this.attacked <= 0){
-                    return;
-                }
-
-                this.attacked += 1;
-                target.hurt(this,Math.floor(Math.random()*this.attackDice+1));
+                this.attack(target);
 
             }
             this.move = function(x,y){
@@ -1284,8 +1350,8 @@
             this.position = vec2(x,y);
             this.ttl = 3.0
             this.render = function(ctx){
-                ctx.strokeStyle = '#fff';
-                ctx.fillStyle = '#000';
+                ctx.strokeStyle = '#000';
+                ctx.fillStyle = '#fff';
                 ctx.font = '16px monospace';
                 ctx.textAlign = 'center';
                 ctx.outlineText(txt,this.position.x,this.position.y);
@@ -1358,9 +1424,7 @@
             ctx.imageSmoothingEnabled = false;
             const s = tileSize;
             const hs = s * 0.5;
-            ctx.fillStyle = 'rgba(0,0,0,0.1)'
-            ctx.lineWidth = 1;
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = Colors.secondary;
             ctx.lineWidth = 1;
             
             grid.loop((x,y,v) => {
@@ -1369,7 +1433,7 @@
 
             const hps = pieceSize * 0.5;
 
-            ctx.strokeStyle = '#fff';
+            ctx.strokeStyle = Colors.primary;
             ctx.lineWidth = 5;
             grid.loop((x,y,v) => {
                 if(v){
@@ -1378,9 +1442,9 @@
                     let py = y*s+hs-hps;
 
                     if(v.active){
-                        ctx.strokeStyle = 'orange';
+                        ctx.strokeStyle = Colors.secondary;
                         ctx.strokeCircle(px+tileSize*0.5,py+tileSize*0.5,20);
-                        ctx.strokeStyle = '#fff';
+                        ctx.strokeStyle = Colors.primary
                     }
 
                     if(icon_lut[v]){
@@ -1407,14 +1471,11 @@
                             ctx.globalAlpha = 0.25;
                         }
 
-                        ctx.fillStyle = 'rgba(255,0,0,0.25)';
-                        grid.floodDraw(x,y,isSolidOccupied,v.attackRange);
-
                         ctx.font = '16px monospace';
                         ctx.drawImage(v.image,0,0,16,16,px,py,pieceSize,pieceSize);
                         ctx.globalAlpha = 1.0;
 
-                        ctx.fillStyle = 'green';
+                        ctx.fillStyle = Colors.moveOverlay
                         ctx.strokeText(movesLeft,px,py-hps*0.33);
                         ctx.fillText(movesLeft,px,py-hps*0.33);
                         ctx.fillStyle = 'red';
@@ -1446,23 +1507,24 @@
                 }
             });
 
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = '#000';
-            gridNav.loop((x,y,v) => {
-                const px = x*s+hs;
-                const py = y*s+hs;
-                ctx.outlineText(v,px,py);
-            });
+            ctx.fillStyle = Colors.primary;
+            ctx.strokeStyle = Colors.secondary;
+            if(save.debugNav){
+                gridNav.loop((x,y,v) => {
+                    const px = x*s+hs;
+                    const py = y*s+hs;
+                    ctx.outlineText(v,px,py);
+                });
+            }
 
             if(selected){
-                ctx.globalAlpha = 0.75;
                 const ps = pieceSize * 0.75;
                 const x = mouse.gx;
                 const y = mouse.gy;
                 if(selected.canMove()){
     
                     if (gridHighlights.get(x,y) === 1){
-                        ctx.strokeStyle = '#08f';
+                        ctx.strokeStyle = Colors.moveOverlay;
                         ctx.beginPath();
                         ctx.lineTo(selected.position.x*s+hs,selected.position.y*s+hs);
                         ctx.lineTo(x*s+hs,y*s+hs);
@@ -1479,19 +1541,6 @@
                     if(grid.get(x,y) && gridHighlights.get(x,y) === 2){
                         ctx.drawImage(imgs.target,0,0,16,16,x*s+hs-hps,y*s+hs-hps,pieceSize,pieceSize);
                     }
-                }
-                ctx.globalAlpha = 1.0;
-                ctx.font = '16px monospace';
-                ctx.lineWidth = 1;
-                scene.ui.buttonWidth = tileSize * 2;
-                scene.ui.buttonHeight = tileSize * 0.5;
-                scene.ui.offsetDirection = vec2(1,0);
-                scene.ui.spacing = 1.1;
-                if(scene.ui.button("End Turn",0,-tileSize*0.5)){
-                    gridHighlights.setAll(false);
-                    selected.attacked = selected.attackCount;
-                    selected.moved = selected.movementSpeed;
-                    selected.note("End turn!")
                 }
             }
             //ctx.strokeStyle = 'rgba(0,0,0,0.25)';
@@ -1522,6 +1571,13 @@
                 }
             }
 
+            this.raycast = function(x,y,dirX,dirY,isSolid,callback){
+                while(!isSolid(x,y)){
+                    x += dirX;
+                    y += dirY;
+                    callback(x,y);
+                }
+            }
 
             this.get = function(x,y,def=-1){
                 if(!this.validPosition(x,y)){
@@ -1592,6 +1648,57 @@
                 this.set(x,y,0);
             };
 
+            this.drawAttackableFlood = function(x,y,isSolid,r=1){
+                let visited = {};
+                let frontlines = [];
+                
+                if(r <= 0){
+                    return;
+                }
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = Colors.attackOverlay;
+                function push(x,y,dis){
+                    if(dis >= r){
+                        return;
+                    } 
+                    const id = (x + y * w).toString();
+                    if(!visited[id] && !isSolid(x,y)){
+                        visited[id] = true;
+                        frontlines.push([x,y,dis+1]);
+                    }
+                   const ts = tileSize * 0.5;
+                   if(x >= 0 && x < 7 && y >= 0 && y < 7){
+                    ctx.strokeCircle(x*tileSize+ts,y*tileSize+ts,ts*0.5);
+                   }
+                }
+
+                push(x+1,y,0);
+                push(x-1,y,0);
+                push(x,y+1,0);
+                push(x,y-1,0);
+
+                /*
+                push(x+1,y+1,0);
+                push(x-1,y-1,0);
+                push(x-1,y+1,0);
+                push(x+1,y-1,0);
+                */
+                while(frontlines.length>0){
+                    var next = frontlines.shift();
+                    push(next[0]+1,next[1],next[2]);
+                    push(next[0]-1,next[1],next[2]);
+                    push(next[0],next[1]+1,next[2]);
+                    push(next[0],next[1]-1,next[2]);
+                    /*
+                    push(next[0]+1,next[1]+1,next[2]);
+                    push(next[0]-1,next[1]-1,next[2]);
+                    push(next[0]-1,next[1]+1,next[2]);
+                    push(next[0]+1,next[1]-1,next[2]);
+                    */
+                }
+            };
+
+
             this.floodDraw = function(x,y,isSolid,r=1){
                 let visited = {};
                 let frontlines = [];
@@ -1622,6 +1729,7 @@
                 push(x-1,y+1,0);
                 push(x+1,y-1,0);
                 */
+               const ts = tileSize * 0.5;
                 while(frontlines.length>0){
                     var next = frontlines.shift();
                     push(next[0]+1,next[1],next[2]);
@@ -1634,7 +1742,7 @@
                     push(next[0]-1,next[1]+1,next[2]);
                     push(next[0]+1,next[1]-1,next[2]);
                     */
-                   ctx.fillRect(next[0]*tileSize,next[1]*tileSize,tileSize,tileSize);
+                   ctx.fillCircle(next[0]*tileSize+ts,next[1]*tileSize+ts,ts*0.25);
                 }
             };
 
@@ -1830,6 +1938,7 @@
 
             function next(){
                 setTimeout(next,delay);
+
                 game.tick += 1;
                 game.actorCursor = cursor;
                 for(let turn of actors){
@@ -1861,49 +1970,48 @@
                     }else{
 
                         actors[cursor].active = true;
-                        const target = current.getClosestTarget();
-                        gridNav.navFill(target.position.x,target.position.y,isSolidOccupied);
 
-                        if(this.health / this.maxHealth < 0.5){
-                            if(current.canMove()){
+                        if(current.ai > 0){
+                            const target = current.getClosestTarget();
+                            gridNav.navFill(target.position.x,target.position.y,isSolidOccupied);
+
+                            if(this.health / this.maxHealth < 0.5){
+                                if(current.canMove()){
+                                    current.navFurther();
+                                }else{
+                                    current.rest();
+                                }
+                                return;
+                            }
+
+                            //todo calculate safest tiles and try to end turn on safest tile
+
+                            if(current.canAttack()){
+                                //adjust distance
+                                let distance = current.distance(target.position.x,target.position.y);
+                                if(distance > current.attackRange){
+                                    distance = current.navCloser();
+                                    current.note("move closer");
+                                }else if(current.attackRange === distance){
+                                    current.note("good range");
+                                    current.moved = current.movementSpeed;
+                                }else{
+                                    current.note("move further");
+                                    distance = current.navFurther();
+                                }
+
+                                //attack if possible
+                                if(distance <= current.attackRange){
+                                    current.attack(target);
+                                    current.note("attack!");
+                                }else if(!current.canMove()){ // if out of range, end turn
+                                    current.note("end turn");
+                                    current.attacked = current.attackCount;
+                                    cursor += 1;
+                                }
+                            }else{
                                 current.navFurther();
-                            }else{
-                                const healAmount = rand(4)+1;
-                                current.health += healAmount;
-                                currnt.note('retreated and healed '+healAmount);
-                                current.attacked = current.attackCount;
-                                current.moved = current.movementSpeed;
                             }
-                            return;
-                        }
-
-                        //todo calculate safest tiles and try to end turn on safest tile
-
-                        if(current.canAttack()){
-                            //adjust distance
-                            let distance = current.distance(target.position.x,target.position.y);
-                            if(distance > current.attackRange){
-                                distance = current.navCloser();
-                                current.note("move closer");
-                            }else if(current.attackRange === distance){
-                                current.note("good range");
-                                current.moved = current.movementSpeed;
-                            }else{
-                                current.note("move further");
-                                distance = current.navFurther();
-                            }
-
-                            //attack if possible
-                            if(distance <= current.attackRange){
-                                current.attack(target);
-                                current.note("attack!");
-                            }else if(!current.canMove()){ // if out of range, end turn
-                                current.note("end turn");
-                                current.attacked = current.attackCount;
-                                cursor += 1;
-                            }
-                        }else{
-                            current.navFurther();
                         }
 
 
@@ -1935,6 +2043,24 @@
 
             wave += 1
 
+            if(wave % 5 === 0){
+                game.storeItems = [];
+                const n = rand(4);
+                if(n === 0 || n === 1){
+                    game.storeItems.push(items.items.randomKey());
+                    game.storeItems.push(items.items.randomKey());
+                    game.storeItems.push(items.items.randomKey());
+                    game.storeItems.push(items.equipment.randomKey());
+                }else if(n === 2){
+                    game.storeItems.push(items.items.randomKey());
+                    game.storeItems.push(items.items.randomKey());
+                    game.storeItems.push(items.Abilities.randomKey());
+                    game.storeItems.push(items.Abilities.randomKey());
+                }else if(n === 3){
+                    
+                }
+            }
+
             if(localStorage.furthest){
                 const f = parseInt(localStorage.furthest,10);
                 if(wave > f){
@@ -1960,25 +2086,9 @@
             }
 
             if(wave % 5 === 0){
-                game.inStore = true;
-                game.storeItems = []
-                const n = rand(4);
-                if(n === 0 || n === 1){
-                    game.storeItems.push(items.item.randomKey());
-                    game.storeItems.push(items.item.randomKey());
-                    game.storeItems.push(items.item.randomKey());
-                    game.storeItems.push(items.weapon.randomKey());
-                }else if(n === 2){
-                    game.storeItems.push(items.item.randomKey());
-                    game.storeItems.push(items.item.randomKey());
-                    game.storeItems.push(items.spell.randomKey());
-                    game.storeItems.push(items.spell.randomKey());
-                }else if(n === 3){
-                    
-                }
 
                 //monsterRollOut.innerHTML += '<h3>Traveling Merchant</h3> Anything of interest? <br/><br/>';
-
+                /*
                 for(let i = 0; i < 4; i++){
                     const d = d4();
                     if(d === 0 || d === 1){
@@ -1993,6 +2103,7 @@
                         //monsterRollOut.innerHTML += `<b>${key}</b> ${item.stats}, ${item.special} - ${item.cost} / ${item.sell}<br/>`;
                     }
                 }
+                */
 
             }
             let first = true;
@@ -2021,7 +2132,7 @@
             let c = d4();
             let l = 0;
 
-            while(grid.quadraticGet(a,b,c) !== undefined && l < 100){
+            while(grid.quadraticGet(a,b,c) !== undefined && l < 9999){
                 a = d4();
                 b = d4();
                 c = d4();
@@ -2062,8 +2173,6 @@
         }
 
         document.body.addEventListener('mousemove',function(e){
-            ctx.fillStyle = '#000';
-            
             const x = vp.mouse.x;
             const y = vp.mouse.y;
             
@@ -2098,7 +2207,6 @@
                     gridHighlights.setAll(false);
                     selected.move(gx,gy);
                     if(selected.canMove()){
-                        selected.note("can move");
                         selected.showMoveGrid();
                     }
                 }else if(gridHighlights.get(gx,gy) === 2){
@@ -2121,7 +2229,7 @@
             }else{
                 
                 selected = grid.get(gx,gy);
-                if(!selected || selected.iq > 0){
+                if(!selected || selected.ai > 0){
                     selected = false;
                     gridHighlights.loop((x,y,v) => {
                         gridHighlights.set(x,y,false);
@@ -2174,6 +2282,7 @@
             this.showBackpack = false;
             this.showEquipped = false;
             this.inStore = false;
+            this.storeItems = [];
             this.tick = 0;
             this.render = function(ctx){
                 render();
@@ -2192,43 +2301,92 @@
                 ctx.translate(0.5,0.5);
 
                 ctx.font = '18px monospace';
-                ctx.fillStyle = '#000';
                 ctx.lineWidth = 2
                 scene.ui.buttonWidth = tileSize * 2.5;
-                scene.ui.buttonHeight = tileSize * 0.25;
-                scene.ui.x = 5;
-
-
-                scene.ui.offsetDirection = vec2(0,1);
+                scene.ui.buttonHeight = tileSize * 0.5;
                 scene.ui.y = 5;
+                scene.ui.x = 5;
                 
+                scene.ui.offsetDirection = vec2(1,0);
                 scene.ui.textBG(area + ' - '+wave);
-                scene.ui.y += scene.ui.buttonHeight;
+                scene.ui.text('game tick: '+game.tick);
+                scene.ui.step(0,1);
+                scene.ui.x = 5;
+                
+
+                if(player.ai > 0){
+                    if(scene.ui.buttonUI("Disable Autoplay")){
+                        player.ai = 0;
+                        Mouse.left = false;
+                    }
+                }else if(scene.ui.buttonUI("Enable Autoplay")){
+                    player.ai = 1;
+                    Mouse.left = false;
+                }
+
+                if(scene.ui.buttonUI("Slot 1 - "+(player.slots[0]||'empty'))){
+                    player.setWeapon(player.slots[0],0);
+                    Mouse.left = false;
+                    player.showAttackRange();
+                };
+                
+                if(scene.ui.buttonUI("Slot 2 - "+(player.slots[1]||"empty"))){
+                    player.setWeapon(player.slots[1],1);
+                    Mouse.left = false;
+                    player.showAttackRange();
+                }
+
+                scene.ui.x = scene.ui.buttonWidth + 5
+                scene.ui.y = scene.ui.buttonHeight * 2 + 5;
+
+                if(scene.ui.buttonUI("End Turn")){
+                    gridHighlights.setAll(false);
+                    selected.attacked = selected.attackCount;
+                    selected.moved = selected.movementSpeed;
+                    selected.note("End turn!")
+                    Mouse.left = false;
+                }
+                
+                scene.ui.buttonWidth = tileSize * 5;
+                scene.ui.x = canvas.width - (5 + scene.ui.buttonWidth);
+                scene.ui.y = scene.ui.buttonHeight;
+                scene.ui.offsetDirection = vec2(0,1);
+                
+                if(game.storeItems.length > 0){
+                    scene.ui.textBG('Mysterious Merchant');
+                    for(let i of game.storeItems){
+                        const item = item_lut[i];
+                        scene.ui.buttonUI(i + ' - '+item.cost + ' - '+item.type);
+                    }
+                    if(scene.ui.buttonUI("Leave Store")){
+                        game.storeItems = [];
+                        Mouse.left = false;
+                    };
+                }
+
+                scene.ui.buttonWidth = tileSize * 2.5;
+                scene.ui.x = 5;
+                scene.ui.y = 5 + scene.ui.buttonHeight * 2;
+
+                scene.ui.spacing = 1;
+                let columnCount = 1;
 
                 if(scene.ui.buttonUI('Backpack')){
                     game.showBackpack = !game.showBackpack;
                     Mouse.left = false;
                 };
 
-                scene.ui.spacing = 1;
-                let columnCount = 1;
-
                 if(game.showBackpack){
+                    scene.ui.x = 5;
+                    scene.ui.y = scene.ui.buttonHeight * 3 + 5;
+                    scene.ui.offsetDirection = vec2(0,1);
 
                     for(let name in playerInventory){
-
-                        if(playerInventory[name].selected){
-                            scene.ui.color1 = '#f00';
-                            scene.ui.color2 = '#000';
-                        }
 
                         if(scene.ui.buttonUI( (playerInventory[name].selected?'> ':'')+name+': '+playerInventory[name].quantity)){
                             playerInventory[name].selected = !playerInventory[name].selected;
                             Mouse.left = false;
                         };
-
-                        scene.ui.color1 = '#000';
-                        scene.ui.color2 = '#fff';
 
                         if(playerInventory[name].selected){
                             scene.ui.step(0.1,0);
@@ -2299,46 +2457,6 @@
                     ctx.fillText(item||'',canvas.width - 10,y);
                     y += 20;
                 }
-
-                scene.ui.x += scene.ui.buttonWidth;
-                scene.ui.y = scene.ui.buttonHeight * 2 + 5;
-                if(scene.ui.buttonUI("Held")){
-                    game.showEquipped = !game.showEquipped;
-                    Mouse.left = false;
-                }
-                if(game.showEquipped){
-                    scene.ui.offsetDirection = vec2(1,0);
-                    
-                    if(scene.ui.buttonUI("Slot 1 - "+(player.slots[0]||'empty'))){
-                        player.slots[0] = false;
-                    };
-
-                    if(scene.ui.buttonUI("Attack With")){
-                        player.setWeapon(player.slots[0],0);
-                        player.showAttackRange();
-                    }
-                    if(scene.ui.buttonUI("Put in Backpack")){
-                        player.slots[0] = false;
-                    };
-                    
-                    scene.ui.x = scene.ui.buttonWidth + 5;
-                    scene.ui.y += scene.ui.buttonHeight;
-
-                    if(scene.ui.buttonUI("Slot 2 - "+(player.slots[1]||"empty"))){
-                        player.slots[1] = false;
-                    }
-
-                    if(scene.ui.buttonUI("Attack With")){
-                        player.setWeapon(player.slots[1],1);
-                        player.showAttackRange();
-                    };
-
-                    if(scene.ui.buttonUI("Put in Backpack")){
-                        player.slots[1] = false;
-                    };
-                }
-                ctx.fillStyle = '#000';
-                ctx.fillText('game tick: '+game.tick,scene.ui.buttonWidth *1.5,20);
                 ctx.restore();
 
 

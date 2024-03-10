@@ -391,6 +391,17 @@ window.addEventListener('mousedown',function(e){
     Signals.emit('mousedown')
 },false);
 
+window.addEventListener('touchstart',function(e){
+    Mouse.left = true;
+    Signals.emit('mousedown')
+},false);
+
+window.addEventListener('touchend',function(e){
+    Mouse.left = false;
+    Signals.emit('mousedown')
+},false);
+
+
 window.addEventListener('mouseup',function(e){
     Mouse[MouseButtons[e.button]] = false;
     Signals.emit('mouseup')
@@ -809,11 +820,13 @@ class GRUI{
             ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y+this.buttonHeight*0.5);
             inside = true;
         }else{
-            ctx.fillStyle = this.color1;
             ctx.strokeStyle = this.color1;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
+            ctx.fillStyle = this.color2;
+            ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
             ctx.strokeRect(this.x+0.5,this.y+0.5,this.buttonWidth,this.buttonHeight);
+            ctx.fillStyle = this.color1;
             ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y+this.buttonHeight*0.5)
         }
 
@@ -835,7 +848,6 @@ class GRUI{
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y + this.buttonHeight * 0.5 + 1);
-
         this.y += this.buttonHeight * this.offsetDirection.y * this.spacing;
         this.x += this.buttonWidth * this.offsetDirection.x * this.spacing;
     }
@@ -843,10 +855,14 @@ class GRUI{
         const ctx = this.viewport.ctx;
         this.x = nx;
         this.y = ny;
+
+        const size = ctx.measureText(text);
+        const height = Math.abs(size.actualBoundingBoxAscent + size.actualBoundingBoxDescent);
+        const width = size.width;
         ctx.fillStyle = this.color1;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(text,this.x,this.y);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y + this.buttonHeight * 0.5 + 1);
         this.y += this.buttonHeight * this.offsetDirection.y * this.spacing;
         this.x += this.buttonWidth * this.offsetDirection.x * this.spacing;
     }
