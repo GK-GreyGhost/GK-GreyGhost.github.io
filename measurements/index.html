@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--Harrison Hartley / GreyGhost - Harrison@mstdn.social -->
+    <!--
+
+        #todo 
+        only one input detects ", ', m, mm, f. i etc
+        turn this into a library to use on my cad program that I will make one day
+        
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>Measurements - GG</title>
+    <style>
+
+        *{
+            box-sizing: border-box;
+            outline:none;
+            border-collapse: collapse;
+            border-radius:0px;
+        }
+
+        body{
+            max-width:800px;
+            margin:auto;
+            align-items: center;
+            margin-top:calc(50vh - 162.5px);
+        }
+
+        .inputContainer input{
+            width:100%;
+            padding:10px;
+            height:100%;
+            margin:0px;
+            border:none;
+            border-left:solid 1px #000;
+        }
+
+        textarea{
+            display:block;
+            border:solid 1px #000;
+            padding:10px;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+            width:calc(100% - 10px);
+            margin:auto;
+            min-height:100px;
+        }
+
+        canvas{
+            border:solid 1px #fff;
+            margin-top:25px;
+        }
+
+        .inputContainer{
+            display:flex;
+            border:solid 1px #000;
+            margin:5px;
+            height:50px;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+        }
+
+        .inputContainer span{
+            display:flex;
+            width:33%;
+            align-items: center;
+            padding:10px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            *{
+                background:#000;
+                color:#fff;
+            }
+            .inputContainer, textarea{
+                border:solid 1px #fff;
+            }
+
+            .inputContainer input{
+                border-left:solid 1px #fff;
+            }
+        }
+
+        @media screen and (max-width:800px){
+
+            .inputContainer input, textarea{
+                font-size:1.5em;
+            }
+
+            .inputContainer, textarea{
+                width:100%;
+                margin:0px;
+                border-left:none;
+                border-right:none;
+            }
+            textarea{
+                border-top:0px;
+                min-height:150px;
+            }
+        }
+
+    </style>
+    <script src="/tolgarith/gerosoup.js"></script>
+</head>
+<body>
+    <script>
+
+        let fractionAccuracy = 16;
+
+        window.onload = () => {
+            "use strict";
+
+            if ("serviceWorker" in navigator && document.URL.split(":")[0] !== "file") {
+                navigator.serviceWorker.register("./sw.js");
+            }
+        }
+
+        const Inputs = {};
+        function createInput(type,title){
+            const span = document.createElement('span');
+            span.className = 'inputContainer';
+            const text = document.createElement('span');
+            text.textContent = title || type;
+            const input = document.createElement('input');
+            //input.placeholder = title || type;
+            Inputs[type] = input;
+            span.appendChild(text);
+            span.appendChild(input);
+            document.body.appendChild(span);
+            return input;
+        }
+
+
+        function decimalToFraction(d,f){
+
+            //I'm sure there's a way to calculate this but I'm really tired and need to finish this in 20 minutes 
+            const larger = {
+                '8/16':'1/2',
+                '4/16':'1/4',
+                '12/16':'3/4',
+                '0/16':''
+            }
+
+            for(let i = 0; i <= f; i++){
+                if(d <= i/f){
+                    if(i === 0){
+                        return '';
+                    }
+                    const n = i+'/'+f;
+                    return ' '+(larger[n]||n);
+                }
+            }
+            return '';
+        }
+
+        
+
+        createInput('feet','Feet & Inches').addEventListener('input',function(e){
+            parseInputImperial(e.target.value);
+        });
+
+        createInput('meters','Meters').addEventListener('input',function(e){
+           parseMetricInput(e.target.value);
+        });
+
+        function Measurement(str){
+
+            if(str){
+                let feet = 0;
+                let inches = 0;
+                let buffer = '';
+                let feetSet = false;
+                for(let i = 0; i < str.length; i++){
+                    const c = str[i];
+                    if(c === '"'){
+                        inches = parseFloat(buffer,10);
+                        buffer = '';
+                    }else if(c === "'"){
+                        if(feetSet){
+                            output.value = 'error! double foot definition'
+                            return;
+                        }else{    feetSet = true;
+                            feet = parseFloat(buffer,10);
+                            buffer = '';
+                        }
+                    }else if(c === ' ' && str.indexOf('"') == -1 && str.indexOf("'") == -1){
+                        if(feetSet){
+                            inches = parseFloat(buffer,10);
+                            buffer = '';
+                            break;
+                        }else{
+                            feetSet = true;
+                            feet = parseFloat(buffer,10);
+                            buffer = '';
+                        }
+                    }else{
+                        buffer += c;
+                    }
+                }
+
+                if(buffer.length > 0){
+                    if(!feetSet){
+                        feet = parseFloat(buffer,10);
+                    }else{
+                        const n = parseFloat(buffer,10);
+                        if(!isNaN(n)){
+                            inches = n;
+                        }
+                    }
+                }
+
+                if(isNaN(feet)){
+                    feet = 0;
+                }
+                
+                if(isNaN(inches)){
+                    inches = 0;
+                }
+                this.inches = inches;
+                this.feet = feet;
+                let m = feet * 12.0 + inches;
+                this.meters = (m / 12) * 0.3048;
+            }else{
+                this.meters = 0;
+                this.feet = 0;
+                this.inches = 0;
+            }
+
+            return {
+                meters:this.meters,
+                set feet(n){
+                    this.meters = n * 0.3048;
+                },
+                set inches(n){
+                    this.meters = (n / 12) * 0.3048;
+                },
+                get feet(){
+                    return this.meters / 0.3048;
+                },
+                get inches(){
+                    return (this.meters / 0.3048) * 12;
+                },
+                get imperial(){
+                    let totalFeet = this.meters / 0.3048;
+                    let feet = Math.floor(totalFeet);
+                    let inches = ((totalFeet * 12) % 12).toFixed(2);
+                    return feet + "' "+inches+'"';
+                }
+            }
+
+        }
+
+        function parseInputImperial(input){
+            Inputs.meters.value = '';
+            let tokens = [];
+
+            let buffer = '';
+            let i = 0;
+            
+            while( i < input.length){
+                const c = input[i];
+                if(c === '+' || c === '-' || c === '*'){
+                    tokens.push(Measurement(buffer));
+                    buffer = '';
+                    tokens.push(c);
+                }else{
+                    buffer += c;
+                }
+                i++;
+            }
+
+            tokens.push(Measurement(buffer));
+            
+            console.log(tokens);
+
+            let out = tokens[0];
+            
+            let last;
+            i = 1;
+            while(i < tokens.length){
+                let t = Measurement();
+                let c = tokens[i];
+                if(c === '-'){
+                    console.log('sub '+tokens[i+1].imperial);
+                    out.meters -= tokens[i+1].meters;
+                    console.log(t.imperial);
+                    i++;
+                }else if(c === '+'){
+                    console.log('add '+tokens[i+1].imperial);
+                    out.meters += tokens[i+1].meters;
+                    console.log(t.imperial);
+                    i++;
+                }
+                i++;
+            }
+
+            console.log(out.imperial);
+
+            // #TODO use the new measurement object
+            const feet = out.feet;
+            const inches = out.inches - out.feet * 12;
+            calculateOutput(feet,inches);
+            const meters = (feet + (inches / 12)) * 0.3048 
+            output.value += 'Metric\n'+meters+'m';
+        }
+
+        function parseMetricInput(input){
+            Inputs.feet.value = '';
+            const meters = parseFloat(input,10);
+            calculateOutput(meters*3.28084,0);
+            output.value += 'Metric\n'+meters+'m';
+        }
+
+        function calculateOutput(feet,inches){
+            feet += Math.floor(inches / 12);
+            inches = inches % 12;
+            const n = fractionAccuracy;
+            const fr = feet % Math.floor(feet);
+            inches += fr * 12.0;
+            const ir = inches % Math.floor(inches);
+            output.value = 'Imperial\n'
+            output.value += `${Math.floor(feet)}' ${inches.toFixed(2)}"\n`;
+            output.value += `${Math.floor(feet)}' ${Math.floor(inches)+decimalToFraction(ir,n)}"\n`;
+        }
+
+        const output = document.createElement('textarea');
+        document.body.appendChild(output);
+
+        createInput("fraction","Fraction Size").addEventListener('input',(e) => {
+            
+            fractionAccuracy = parseInt(e.target.value,10);
+            if(Inputs.feet.value){
+                parseInputImperial(Inputs.feet.value);
+            }else if(Inputs.meters.value){
+                parseMetricInput(Inputs.meters.value);
+            }
+
+        });
+
+        Inputs.fraction.value = 16;
+
+        const floorplanInput = createInput("floorplan","Floorplan");
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 800;
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#fff';
+
+        function render(input){
+            if(input.length > 0){
+                canvas.style.display = 'block';
+
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.save();
+                ctx.translate(canvas.width*0.5,canvas.height*0.5);
+
+                const tokens = input.split(';');
+                
+                let points = [vec2(0,0)];
+
+                let directions = {
+                    'u':vec2(0,-1),
+                    'l':vec2(-1,0),
+                    'r':vec2(1,0),
+                    'd':vec2(0,1)
+                }
+
+                let cursor = vec2(0,0);
+                let center = vec2(0,0);
+                for(let t of tokens){
+                    t = t.trim();
+                    let parts = t.split(' ');
+                    let direction = parts.shift();
+                    if(direction){
+                        let m = Measurement(parts.join(' '));
+                        
+                        cursor.x += directions[direction].x * m.feet;
+                        cursor.y += directions[direction].y * m.feet;
+
+                        points.push(cursor.duplicate())
+                    }
+                }
+
+                console.log(center.x,center.y);
+
+                for(let p of points){
+                    center.x += p.x;
+                    center.y += p.y;
+                }
+
+                center.x /= (points.length - 1);
+                center.y /= (points.length - 1);
+
+                const bb = getBoundingBox(points);
+                ctx.strokeStyle = 'red';
+                console.log(bb);
+
+                let furthest = Math.max(bb.width,bb.height);
+
+                bb.x /= furthest;
+                bb.y /= furthest;
+                bb.width /= furthest;
+                bb.height /= furthest;
+
+                bb.x *= canvas.width;
+                bb.y *= canvas.height;
+                bb.width *= canvas.width;
+                bb.height *= canvas.height;
+
+                ctx.lineWidth = 5;
+                ctx.strokeRect(bb.x-bb.width*0.5,bb.y+bb.height*0.5,bb.width,bb.height);
+
+                function process(v){
+                    v.x /= furthest;
+                    v.y /= furthest;
+
+                    v.x *= canvas.width;
+                    v.y *= canvas.height;
+                    v.x -= bb.width * 0.5;
+                    v.y += bb.height * 0.5;
+                }
+
+                for(let p of points){
+                    process(p);
+                }
+
+                process(center);
+                
+                ctx.strokeStyle = '#fff';
+
+                ctx.beginPath();
+
+                for(let p of points){
+                    ctx.lineTo(p.x,p.y);
+                }
+
+                ctx.stroke();
+
+                for(let p of points){
+                    ctx.fillCircle(p.x,p.y,15);
+                    ctx.fillText(p,p.x,p.y);
+                }
+
+                ctx.fillCircle(canvas.width*0.5,canvas.height*0.5,10);
+                ctx.lineWidth = 4;
+                console.log(center);
+                ctx.fillCircle(center.x,center.y,4);
+                ctx.fillText(furthest,50,50);
+                ctx.restore();
+
+            }else{
+                canvas.style.display = 'none';
+            }
+
+        }
+
+        function getBoundingBox(points){
+            let maxX = 0;
+            let maxY = 0;
+            let minX = Infinity;
+            let minY = Infinity;
+            for(let p of points){
+                if(p.x > maxX){
+                    maxX = p.x;
+                }else if(p.x < minX){
+                    minX = p.x;
+                }
+                if(p.y > maxY){
+                    maxY = p.y;
+                }else if(p.y < minY){
+                    minY = p.y;
+                }
+            }
+            return {
+                x:minX,
+                y:minY,
+                width:maxX-minX,
+                height:maxY-minY
+            }
+        }
+
+        floorplanInput.addEventListener('input',function(e){
+            localStorage.floorplan = e.target.value;
+            render(e.target.value);
+        });
+
+        if(localStorage.floorplan){
+            floorplanInput.value = localStorage.floorplan;
+            render(floorplanInput.value);
+        }
+
+
+    </script>
+</body>
+</html>

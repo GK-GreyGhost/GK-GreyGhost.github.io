@@ -208,6 +208,11 @@ Vector2.prototype.normalize = function(){
     return this;
 }
 
+Vector2.prototype.divide = function(v2){
+    this.x /= v2.x;
+    this.y /= v2.y;
+}
+
 Vector2.prototype.distanceSquaredTo = function(v2){
     return Math.pow(v2.x-this.x,2) + Math.pow(v2.y-this.y,2);
 };

@@ -45,27 +45,41 @@
         }
 
         .lineContainer{
-            padding:10px;
-            margin:10px;
             position:fixed;
-            top:0px;
-            left:0px;
+            bottom:0px;
+            right:0px;
             background:#fff;
             overflow:hidden;
             border:solid 1px #000;
             opacity:0.25;
+            max-width:calc(100% - 20px);
         }
 
         input{
             outline:none;
             border:solid 1px #000;
             padding:5px;
+            height:100%;
+            text-align:center;
         }
 
+        .line{
+            display:flex;
+            height:50px;
+        }
+
+        .line *{
+            outline:none;
+            border:none;
+        }
 
         .lineContainer div, .lineContainer input{
             padding:2px;
             margin:2px;
+        }
+
+        textarea{
+            resize:none;
         }
 
     </style>
@@ -76,6 +90,20 @@
     <script>
         let Mouse = {x:0,y:0};
         
+        if(localStorage.save){
+            baseData = JSON.parse(localStorage.save);
+        }
+
+        const save = new Proxy(baseData,{
+            set(target, key, value) {
+                target[key] = value;
+                localStorage.save = JSON.stringify(target);
+            },
+            get(target,key){
+                return target[key];
+            }
+        });
+
         dropContainer.ondragover = dropContainer.ondragenter = function(evt) {
             evt.preventDefault();
             return false;
@@ -107,16 +135,17 @@
                         
                         let selected;
                         
-                        function addLine(){
+                        function addLine(x=50,y=50){
 
                             const div = document.createElement('div');
+                            div.className = 'line';
                             lineContainer.appendChild(div);
 
                             const input = document.createElement('textarea');
                             div.appendChild(input);
                             
                             const position = document.createElement('input');
-                            position.value = (Math.random() * img.width).toFixed(2) + ' ' + (Math.random() * img.height).toFixed(2);
+                            position.value = (x).toFixed(2) + ' ' + (y).toFixed(2);
                             position.addEventListener('keyup',redraw);
                             
                             div.appendChild(position);
@@ -135,7 +164,7 @@
                             input.addEventListener('keyup',function(){
                                 redraw();
                                 if(lineContainer.lastChild.children[0] == input){
-                                    addLine();
+                                    addLine(x,y+50);
                                 }
                             },false);
 
@@ -189,6 +218,13 @@
 
                                 ctx.font = item.children[2].value;
                                 ctx.fillStyle = item.children[3].value;
+                                if(x > canvas.width * 0.33){
+                                    ctx.textAlign = 'left';
+                                }else if(x > canvas.width * 0.66){
+                                    ctx.textAlign = 'right';
+                                }else{
+                                    ctx.textAlign = 'center';
+                                }
                                 const text = item.children[0].value.split('\n');
                                 for(let line of text){
                                     const metrics = ctx.measureText(line);
@@ -201,7 +237,7 @@
                                     ctx.fillText(line,x,y);
                                     y += height * 1.5;
                                     boundingBoxes.push({
-                                        x:x-width*0.5,y:y-height*2,width,height,element:item,positionElem:item.children[1]
+                                        x:x,y:y-height*2,width,height,element:item,positionElem:item.children[1]
                                     });
                                 }
 
