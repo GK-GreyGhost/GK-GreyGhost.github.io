@@ -419,11 +419,12 @@
                 function process(v){
                     v.x /= furthest;
                     v.y /= furthest;
-
                     v.x *= canvas.width;
                     v.y *= canvas.height;
                     v.x -= bb.width * 0.5;
                     v.y += bb.height * 0.5;
+                    v.y *= 0.8;
+                    v.x *= 0.8;
                 }
 
                 for(let p of points){
@@ -444,14 +445,8 @@
 
                 for(let p of points){
                     ctx.fillCircle(p.x,p.y,15);
-                    ctx.fillText(p,p.x,p.y);
                 }
 
-                ctx.fillCircle(canvas.width*0.5,canvas.height*0.5,10);
-                ctx.lineWidth = 4;
-                console.log(center);
-                ctx.fillCircle(center.x,center.y,4);
-                ctx.fillText(furthest,50,50);
                 ctx.restore();
 
             }else{
