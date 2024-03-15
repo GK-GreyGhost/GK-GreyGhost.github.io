@@ -2,13 +2,6 @@
 <html lang="en">
 <head>
     <!--Harrison Hartley / GreyGhost - Harrison@mstdn.social -->
-    <!--
-
-        #todo 
-        only one input detects ", ', m, mm, f. i etc
-        turn this into a library to use on my cad program that I will make one day
-        
-    -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
@@ -22,11 +15,17 @@
             border-radius:0px;
         }
 
+        html,body{
+            width:100%;
+            height:100%;
+            padding:0px;
+            margin:0px;
+            overflow:hidden;
+        }
+
         body{
-            max-width:800px;
             margin:auto;
             align-items: center;
-            margin-top:calc(50vh - 162.5px);
         }
 
         .inputContainer input{
@@ -48,12 +47,6 @@
             min-height:100px;
         }
 
-        canvas{
-            border:solid 1px #fff;
-            margin-top:25px;
-            max-width: 100%;
-            height:auto;
-        }
 
         .inputContainer{
             display:flex;
@@ -107,15 +100,254 @@
 </head>
 <body>
     <script>
+        const vp = new Viewport(window.innerWidth,window.innerHeight);
+        const scene = new Scene(vp);
+        const ui = scene.ui;
+        scene.start()
 
         let fractionAccuracy = 16;
+        let feetScale = 30;
+        let inchScale = feetScale / 12;
 
+        let baseData = {
+            walls:[],
+            redo:[],
+            wallThickness:1,
+            snapDistance:10, 
+            renderGrid:true,
+            showTips:true,
+            invert:false
+        };
+
+        if(localStorage.save){
+            let data = JSON.parse(localStorage.save);
+            for(let key in data){
+                baseData[key] = data[key];
+            }
+        }
+
+        const save = new Proxy(baseData,{
+            set(target, key, value) {
+                target[key] = value;
+                localStorage.save = JSON.stringify(target);
+            },
+            get(target,key){
+                return target[key];
+            }
+        });
+
+        //#TODO for now....
+        save.walls = [];
+        save.redo = [];
+
+
+        updateInvert();
+
+        let active;
+
+        function renderWall(ctx,start,end){
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#fff';
+            ctx.strokeCircle(
+                start.x,
+                start.y,
+                save.snapDistance
+            );
+
+            ctx.strokeCircle(
+                end.x,
+                end.y,
+                save.snapDistance
+            );
+
+            ctx.lineWidth = save.wallThickness * inchScale;
+
+            if(start.x === end.x || start.y === end.y){
+                ctx.strokeStyle = '#fff';
+            }else{
+                ctx.strokeStyle = '#f80';
+            }
+
+            ctx.beginPath();
+            ctx.lineTo(start.x,start.y);
+            ctx.lineTo(end.x,end.y);
+            ctx.stroke();
+
+            let distance = start.distanceTo(end);
+            let direction = start.directionTo(end);
+            
+            let feet = Math.floor(distance / feetScale);
+            let inches = Math.floor( (distance/inchScale) % 12);
+            const mid = start.duplicate();
+            mid.lerp(end,0.5);
+            
+            const r = Math.atan2(direction.x,direction.y) + Math.PI * 0.5;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.lineTo(mid.x,mid.y);
+            mid.x += Math.sin(r) * 30;
+            mid.y += Math.cos(r) * 30;
+            ctx.lineTo(mid.x,mid.y);
+            ctx.stroke();
+            mid.x += Math.sin(r) * 20;
+            mid.y += Math.cos(r) * 20;
+
+            ctx.fillText(feet.toFixed(2)+"' "+inches+'"',mid.x,mid.y);
+        }
+
+        document.body.addEventListener('keydown',function(e){
+            if(e.key === 'z'){
+                if(Keys.Shift){
+                    if(save.redo.length > 0){
+                        save.walls.push(save.redo.pop());
+                    }
+                }else{
+                    if(save.walls.length > 0){
+                        save.redo.push(save.walls.pop());
+                    }
+                }
+            }else if(e.key === 'g'){
+                save.renderGrid = !save.renderGrid;
+            }else if(e.key === 'h'){
+                save.showTips = !save.showTips;
+            }else if(e.key === 'i'){
+                save.invert = !save.invert;
+                updateInvert();
+            }
+        },false)
+
+        function updateInvert(){ // quick and hacky for now
+            if(save.invert){
+                const style = document.createElement('style');
+                style.textContent = 'canvas{filter:invert(1);}';
+                document.body.appendChild(style);
+                style.className = 'invert';
+            }else{
+                let elements = document.querySelectorAll('.invert');
+                for(let i = 0; i < elements.length; i++){
+                    elements[i].remove();
+                }
+            }
+        }
+
+        window.addEventListener('resize',function(){
+            vp.resize(window.innerWidth,window.innerHeight);
+        },false);
+
+        function Main(){
+            
+            this.render = function(ctx){
+
+                ctx.lineWidth = 1;
+                if(save.renderGrid){
+                    ctx.strokeStyle = '#444';
+                    const scale = feetScale;
+                    for(let x = 0; x <= window.innerWidth; x += scale){
+                        for(let y = 0; y <= window.innerHeight; y += scale){
+                            ctx.strokeRect(x,y,scale,scale);
+                        }
+                    }
+                }
+                ctx.strokeStyle = '#fff';
+                ctx.fillStyle = '#fff';
+
+                ctx.lineWidth = 2;
+                Mouse.position = snapTo(Mouse.position);
+                ctx.strokeCircle(Mouse.position.x,Mouse.position.y,4);
+
+                ctx.textAlign = 'center';
+                for(let wall of save.walls){
+                   renderWall(ctx,wall.start,wall.end);
+                }
+                if(active){
+                   renderWall(ctx,active.start,Mouse.position);
+                }
+                if(save.showTips){
+                    ui.color1 = '#000';
+                    ui.color2 = '#fff';
+                    ui.x = 10;
+                    ui.y = 10;
+                    ui.buttonWidth = 250;
+                    ui.buttonHeight = 50;
+                    ui.textBG('H - toggle help menu (this)');
+                    ui.textBG("G - toggle grid");
+                    ui.textBG("Z - undo");
+                    ui.textBG("Hold shift to snap by inches");
+                    ui.textBG("orange indicates a line that is diagonal");
+                }
+
+            }
+            this.update = function(delta){
+                if(Mouse.left){
+                    Mouse.left = false;
+                    if(!active){
+                        active = {
+                            start:vec2(
+                                Mouse.position.x,
+                                Mouse.position.y,
+                            ),
+                            type:'wall'
+                        }
+
+                        active.start = snapTo(active.start);
+
+                        for(let wall of save.walls){
+                            if(wall.start.distanceTo(active.start) < save.snapDistance){
+                                active.start = wall.start;
+                            }
+                            if(wall.end.distanceTo(active.start) < save.snapDistance){
+                                active.start = wall.end;
+                            }
+                        }
+
+                    }else{
+                        active.end = vec2(
+                            Mouse.position.x,
+                            Mouse.position.y
+                        )
+
+                        active.end = snapTo(active.end);
+                        
+                        for(let wall of save.walls){
+                            if(wall.start.distanceTo(active.end) < save.snapDistance){
+                                active.end = wall.start;
+                            };
+                            if(wall.end.distanceTo(active.end) < save.snapDistance){
+                                active.end = wall.end;
+                            };
+                        }
+
+                        save.walls.push(active);
+                        active = false;
+
+
+
+                    }
+                }
+            }
+        }
+
+        scene.add(new Main());
+
+        function snapTo(v){
+            if(Keys.Shift){
+                v.x = Math.round(v.x / inchScale) * inchScale;
+                v.y = Math.round(v.y / inchScale) * inchScale;
+            }else{
+                v.x = Math.round(v.x / feetScale) * feetScale;
+                v.y = Math.round(v.y / feetScale) * feetScale;
+            }
+            return v;
+        }
+
+        /*
         window.onload = () => {
             "use strict";
             if ("serviceWorker" in navigator && document.URL.split(":")[0] !== "file") {
                 navigator.serviceWorker.register("./sw.js");
             }
         }
+        */
 
         const Inputs = {};
         function createInput(type,title){
@@ -154,8 +386,6 @@
             }
             return '';
         }
-
-        
 
         createInput('feet','Feet & Inches').addEventListener('input',function(e){
             parseInputImperial(e.target.value);

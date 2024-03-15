@@ -197,6 +197,11 @@ Vector2.prototype.toString = function(){
     return `X:${this.x}, Y:${this.y}`;
 }
 
+Vector2.prototype.lerp = function(b,amount){
+    this.x = Math.lerp(this.x,b.x,amount);
+    this.y = Math.lerp(this.y,b.y,amount);
+}
+
 Vector2.prototype.length = function(){
     return Math.sqrt(Math.pow(this.x,2) + Math.pow(this.y,2));
 }
