@@ -218,9 +218,9 @@
 
                                 ctx.font = item.children[2].value;
                                 ctx.fillStyle = item.children[3].value;
-                                if(x > canvas.width * 0.33){
+                                if(x < canvas.width * 0.2){
                                     ctx.textAlign = 'left';
-                                }else if(x > canvas.width * 0.66){
+                                }else if(x > canvas.width * 0.8){
                                     ctx.textAlign = 'right';
                                 }else{
                                     ctx.textAlign = 'center';
