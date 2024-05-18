@@ -13,8 +13,14 @@
             font-family:helvetica;
         }
 
+        html,body{
+            width:100%;
+            height:100%;
+        }
+
         body{
             background:#222;
+            display:flex;
         }
         
         #fileInput{
@@ -37,7 +43,6 @@
             right:0px;
             bottom:0px;
             font-size:4em;
-            opacity:0.25;
             margin:auto;
             color:#fff;
             height:40px;
@@ -51,7 +56,6 @@
             background:#fff;
             overflow:hidden;
             border:solid 1px #000;
-            opacity:0.25;
             max-width:calc(100% - 20px);
         }
 
@@ -82,12 +86,99 @@
             resize:none;
         }
 
+        .styleInput{
+            display:block;
+            width:250px;
+            height:100%;
+            text-align:left;
+            outline:none;
+            padding:10px;
+        }
+
+        .note{
+            border:solid 1px #000;
+            padding:5px;
+        }
+
     </style>
 </head>
 <body>
+
+    <!--
+        todo:
+            style:
+                render_pass
+                    outline or fill
+                        outline / fill color
+                        outline thickness
+                        offset x / y
+                        transparency
+                        blend mode
+    -->
     <div id="dropContainer"></div>
        <input type="file" id="fileInput" />
     <script>
+
+        const styleInput = document.createElement('textarea');
+        document.body.appendChild(styleInput);
+        styleInput.className = 'styleInput';
+        styleInput.value = localStorage.styles || '#default \nfill, black';
+        styles = parseStyles(styleInput.value);
+
+        CanvasRenderingContext2D.prototype.renderTextWithStyle = function(text,x,y,style){
+            for(let pass of style.passes){
+                if(pass[0] === 'fill'){
+                    this.fillStyle = pass[1];
+                    let offsetX = 0;
+                    let offsetY = 0;
+                    if(pass.length > 2){
+                        [offsetX,offsetY] = pass[2].split(',').map(a => parseInt(a.trim(),10));
+                    }
+                    this.fillText(text,x+offsetX,y+offsetY);
+                }else if(pass[0] === 'stroke'){
+                    this.strokeStyle = pass[1];
+                    this.lineWidth = parseFloat(pass[2],10);
+                    this.lineJoin = pass[3];
+                    this.strokeText(text,x,y);
+                }else if(pass[0] === 'font'){
+                    this.font = pass[1];
+                }
+            }
+        }
+
+        styleInput.addEventListener('keyup',function(){
+            localStorage.styles = styleInput.value;
+            styles = parseStyles(styleInput.value);
+            if(redraw){
+                redraw();
+            }
+        },false);
+
+        function parseStyles(input){
+            let styles = {};
+            let lines = input.split('\n');
+            let current;
+            let title = '';
+            for(let line of lines){
+                line = line.trim();
+                if(line[0] === '#'){
+                    title = line.substr(1);
+                    current = {
+                        passes:[]
+                    };
+                    styles[title] = current;
+                }else{
+                    if(line.length > 0){
+                        let pass = line.split(';').map( a=> a.trim());
+                        //optimize later xD
+                        current.passes.push(pass);
+                    }
+                }
+            }
+            console.log(styles);
+            return styles;
+        }
+
         let Mouse = {x:0,y:0};
         
         if(localStorage.save){
@@ -116,6 +207,7 @@
                 reader.onload = function(e){
                     const img = new Image();
                     img.onload = function(){
+
                         dropContainer.remove();
 
                         const canvas = document.createElement('canvas');
@@ -142,6 +234,7 @@
                             lineContainer.appendChild(div);
 
                             const input = document.createElement('textarea');
+                            input.className = 'note';
                             div.appendChild(input);
                             
                             const position = document.createElement('input');
@@ -150,16 +243,10 @@
                             
                             div.appendChild(position);
 
-                            const font = document.createElement('input');
-                            font.value = 'bold 20px ariel';
-                            font.addEventListener('keyup',redraw);
-
-                            div.appendChild(font);
-
-                            const color = document.createElement('input');
-                            color.addEventListener('keyup',redraw);
-                            color.value = '#777';
-                            div.appendChild(color);
+                            const style = document.createElement('input');
+                            style.addEventListener('keyup',redraw);
+                            style.value = 'default';
+                            div.appendChild(style);
 
                             input.addEventListener('keyup',function(){
                                 redraw();
@@ -171,31 +258,37 @@
                             redraw();
                         }
 
-                        document.body.addEventListener('mousedown',function(e){
-                            const x = e.pageX;
-                            const y = e.pageY;
-                            Mouse.x = x;
-                            Mouse.y = y;
+                        window.debug = true;
+
+                        canvas.addEventListener('mousedown',function(e){
+                            
+                            const rect = canvas.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+
+                            Mouse.x = x * canvas.width / canvas.clientWidth;
+                            Mouse.y = y * canvas.height / canvas.clientHeight;
 
                             for(let box of boundingBoxes){
-                                if(x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height){
+                                if(Mouse.x > box.x && Mouse.x < box.x + box.width && Mouse.y > box.y && Mouse.y < box.y + box.height){
                                     selected = box;
                                 }
                             }
                         },false);
 
-                        document.body.addEventListener('mousemove',function(e){
+                        canvas.addEventListener('mousemove',function(e){
 
-                            const x = e.pageX;
-                            const y = e.pageY;
-                            Mouse.x = x;
-                            Mouse.y = y;
+                            const rect = canvas.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            Mouse.x = x * canvas.width / canvas.clientWidth;
+                            Mouse.y = y * canvas.height / canvas.clientHeight;
 
                             if(!selected){
                                 return;
                             }
  
-                            selected.positionElem.value = x + ' ' + y;
+                            selected.positionElem.value = Mouse.x + ' ' + Mouse.y;
                             redraw();
 
                         },false);
@@ -208,7 +301,9 @@
                             boundingBoxes = [];
                             ctx.drawImage(img,0,0);
                             ctx.fillStyle = 'red';
-                            //ctx.fillRect(Mouse.x-5,Mouse.y-5,10,10);
+                            if(window.debug){
+                                ctx.fillRect(Mouse.x-5,Mouse.y-5,10,10);
+                            }
                             for(let item of lineContainer.children){
                                 
                                 const position = item.children[1].value.split(' ');
@@ -216,8 +311,8 @@
                                 const x = parseFloat(position[0],10);
                                 let y = parseFloat(position[1],10);
 
-                                ctx.font = item.children[2].value;
-                                ctx.fillStyle = item.children[3].value;
+                                //ctx.font = item.children[2].value;
+                                //ctx.fillStyle = item.children[3].value;
                                 if(x < canvas.width * 0.2){
                                     ctx.textAlign = 'left';
                                 }else if(x > canvas.width * 0.8){
@@ -227,30 +322,38 @@
                                 }
                                 const text = item.children[0].value.split('\n');
                                 for(let line of text){
+                                    ctx.renderTextWithStyle(line,x,y,styles[item.children[2].value]);
                                     const metrics = ctx.measureText(line);
                                     const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
                                     const width = metrics.width;
-                                    ctx.lineWidth = 5;
-                                    ctx.strokeStyle = '#000';
-                                    ctx.fillStyle = '#fff';
-                                    ctx.strokeText(line,x,y);
-                                    ctx.fillText(line,x,y);
+                                    let x2 = x;
+                                    if(ctx.textAlign === 'left'){
+
+                                    }else if(ctx.textAlign === 'center'){
+                                        x2 -= width / 2;
+                                    }else{
+                                        x2 -= width;
+                                    }
                                     y += height * 1.5;
                                     boundingBoxes.push({
-                                        x:x,y:y-height*2,width,height,element:item,positionElem:item.children[1]
+                                        x:x2,y:y-height*2,width,height,element:item,positionElem:item.children[1]
                                     });
                                 }
 
                             }
-                            /*
-                            ctx.lineWidth = 3;
-                            ctx.strokeStyle = 'red';
-                            for(let box of boundingBoxes){
-                                ctx.strokeRect(box.x,box.y,box.width,box.height);
+                            
+                            if(window.debug){
+                                ctx.lineWidth = 3;
+                                ctx.strokeStyle = 'red';
+                                for(let box of boundingBoxes){
+                                    ctx.strokeRect(box.x,box.y,box.width,box.height);
+                                }
                             }
-                            */
                         }
-
+                        if(!window.redraw){
+                            window.redraw = redraw;
+                            setInterval(redraw,100);
+                        }
                     }
                     img.src = e.target.result;
                 }
