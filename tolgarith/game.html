@@ -402,20 +402,12 @@
             turnDelay = parseInt(localStorage.turnDelay,10);
         }
 
-        
         mouse = vp.mouse;
 
         const log = document.createElement('textarea');
         log.className = 'log';
         log.style.display = 'none';
         log.setAttribute('readonly',true);
-
-
-        Array.prototype.push_unique = function(n){
-            if(!this.includes(n)){
-                this.push(n);
-            }
-        }
 
         function tableify(obj,title,columns=[],className=''){
             if(columns.length === 0){

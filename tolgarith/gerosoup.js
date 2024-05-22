@@ -21,6 +21,22 @@ Math.sigmoid = function(z){
     return 1 / (1 + Math.exp(-z/k));
 }
 
+Math.randomColor = function(){
+    return '#'+Math.floor(Math.random()*16777214).toString(16);
+}
+
+Array.prototype.copy = function(){
+    let copy = [];
+    for(let i = 0; i < this.length; i++){
+        copy.push(this[i]);
+    }
+    return copy;
+}
+
+Array.prototype.random = function(){
+    return this[Math.floor(Math.random()*this.length)];
+}
+
 Array.prototype.pushUnique = function(a){
     if(this.includes(a)){
         return this.length;
@@ -35,6 +51,14 @@ Array.prototype.remove = function(item){
         return true;
     }
     return false;
+}
+      
+Math.randomRange = function(min,max){
+    return Math.random() * (max - min) + min;
+}
+
+Math.randomIntRange = function(min,max){
+    return Math.floor(Math.random() * (max - min) + min);
 }
 
 window.addEventListener('contextmenu',function(e){
@@ -528,7 +552,7 @@ Grid.prototype.moveCheck = function(currentPosition,direction){
 Grid.prototype.get = function(x,y,def=-1){
     
     if(isNaN(x) || isNaN(y)){
-        console.error(x,y);
+        throw new Error('X or Y is not a number!');
     }
 
     if(x >= this.data.length || x < 0){
@@ -553,6 +577,14 @@ Grid.prototype.setAll = function(v){
     for(let x = 0; x < this.gridWidth; x++){
         for(let y = 0; y < this.gridHeight; y++){
             this.data[x][y] = v;
+        }
+    }
+}
+
+Grid.prototype.loop = function(callback){
+    for(let x = 0; x < this.gridWidth; x++){
+        for(let y = 0; y < this.gridHeight; y++){
+            callback(x,y,this.data[x][y]);
         }
     }
 }

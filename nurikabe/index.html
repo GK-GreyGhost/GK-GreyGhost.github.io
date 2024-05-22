@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<script src="/tolgarith/gerosoup.js"></script>
+</head>
+<body>
+
+    <script>
+
+        // board setup
+
+        let tileSize = 32;
+        let gridSize = 8;
+
+        const vp = new Viewport(window.innerWidth,window.innerHeight);
+        const scene = new Scene(vp);
+
+        const camera = scene.camera;
+        vp.camera = camera;
+
+        addEventListener('resize',function(){
+            reflow();
+        },false);
+
+        function calculateTilesize(){
+            tileSize = Math.min(window.innerWidth,window.innerHeight);
+            tileSize /= (gridSize + 2);
+        }
+
+        function reflow(){
+            vp.resize(window.innerWidth,window.innerHeight);
+            calculateTilesize();
+            const w = tileSize * gridSize;
+            camera.position.x = -window.innerWidth / 2 + w / 2;
+            camera.position.y = -window.innerHeight / 2 + w / 2;
+            vp.ctx.lineWidth = 4;
+            vp.ctx.textAlign = 'center';
+            vp.ctx.font = '32px monospace';
+        }
+
+        reflow();
+
+        scene.start();
+
+        function setupGame(size){
+            gridSize = size;
+            const grid = new Grid(size,size);
+            scene.add(grid);
+
+            for(let x = 0; x < gridSize; x++){
+                for(let y = 0; y < gridSize; y++){
+                    grid.data[x][y] = {
+                        color:'#fff',
+                        value:'r'
+                    }
+                }
+            }
+
+            game.grid = grid;
+
+            complicate(grid);
+
+            grid.renderTile = function(ctx,x,y,v){
+                
+                ctx.strokeRect(
+                    x*tileSize,y*tileSize,
+                    tileSize,tileSize
+                );
+
+                ctx.fillStyle = v.color;
+                
+                ctx.fillRect(
+                    x*tileSize,y*tileSize,
+                    tileSize,tileSize
+                );
+
+                ctx.fillStyle = '#000';
+
+                if(v.value === 'r'){
+                    const pad = tileSize * 0.75;
+                    const hp = pad * 0.5;
+                    ctx.fillRect(
+                        x*tileSize+hp,y*tileSize+hp,
+                        tileSize-pad,tileSize-pad
+                    );
+                }else{
+                    ctx.strokeRect(
+                        x*tileSize,y*tileSize,
+                        tileSize,tileSize
+                    );
+                    if(v > 0){
+                        ctx.fillText(
+                            v.value,
+                            x*tileSize+tileSize*0.5,
+                            y*tileSize+tileSize*0.5 + 10,
+                        );
+                    }
+                }
+
+            }
+        }
+
+        function complicate(){
+            
+            const grid = game.grid;
+            var available = [];
+            
+            grid.loop( (x,y,v) => {
+                if(v.value === 'r'){
+                    available.push([x,y]);
+                };
+            });
+
+            if(available.length > 0){
+                const pick = available.random();
+                let count = Math.randomIntRange(1,5)
+                let group = Math.randomColor();
+                count -= 1;
+                grid.set(pick[0],pick[1],{
+                    value:count,
+                    color:group
+                });
+
+                function blank(pos){
+                    var directions = V2.cardinal.copy();
+                    while(directions.length > 0){
+                        const n = Math.randomIntRange(0,directions.length);
+                        const next = directions.splice(n,1)[0];
+                        if(grid.get(pos[0]+next.x,pos[1]+next.y,-1).value === 'r'){
+                            count -= 1;
+                            grid.set(pos[0]+next.x,pos[1]+next.y,{
+                                value:0,
+                                color:group
+                            });
+                            if(count > 0){
+                                blank([pos[0]+next.x,pos[1]+next.y]);
+                            }
+                        }
+                    }
+
+                }
+
+                blank(pick);
+
+                if(hasOcean()){
+                    setTimeout(complicate,100);
+                }else{
+                   done();
+                }
+                
+            }else{
+                done();
+            }
+        }
+
+        function done(){
+            alert("done!");
+        }
+
+        function hasOcean(){
+            const grid = game.grid;
+            for(let x = 0; x < gridSize; x++){
+                for(let y = 0; y < gridSize; y++){
+                    const v = grid.data[x][y].value;
+                    let down = grid.get(x,y+1).value;
+                    let right = grid.get(x+1,y).value;
+                    let diag = grid.get(x+1,y+1).value;
+                    if(down === v && right === diag && diag === v){
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function Game(){
+            this.grid;
+        }
+
+        const game = new Game();
+
+        scene.add(game);
+
+        setupGame(gridSize)
+
+        // game setup
+
+        addEventListener('mousedown',function(){
+            complicate();
+        },false);
+
+
+    </script>
+    
+</body>
+</html>
