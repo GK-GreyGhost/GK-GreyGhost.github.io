@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--Harrison Hartley / GreyGhost - Harrison@mstdn.social -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>Measurements - GG</title>
+    <style>
+
+        *{
+            box-sizing: border-box;
+            outline:none;
+            border-collapse: collapse;
+            border-radius:0px;
+        }
+
+        html,body{
+            width:100%;
+            height:100%;
+            padding:0px;
+            margin:0px;
+            overflow:hidden;
+        }
+
+        body{
+            margin:auto;
+            align-items: center;
+        }
+
+        .inputContainer input{
+            width:100%;
+            padding:10px;
+            height:100%;
+            margin:0px;
+            border:none;
+            border-left:solid 1px #000;
+        }
+
+        textarea{
+            display:block;
+            border:solid 1px #000;
+            padding:10px;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+            width:calc(100% - 10px);
+            margin:auto;
+            min-height:100px;
+        }
+
+
+        .inputContainer{
+            display:flex;
+            border:solid 1px #000;
+            margin:5px;
+            height:50px;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+        }
+
+        .inputContainer span{
+            display:flex;
+            width:33%;
+            align-items: center;
+            padding:10px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            *{
+                background:#000;
+                color:#fff;
+            }
+            .inputContainer, textarea{
+                border:solid 1px #fff;
+            }
+
+            .inputContainer input{
+                border-left:solid 1px #fff;
+            }
+        }
+
+        @media screen and (max-width:800px){
+
+            .inputContainer input, textarea{
+                font-size:1.5em;
+            }
+
+            .inputContainer, textarea{
+                width:100%;
+                margin:0px;
+                border-left:none;
+                border-right:none;
+            }
+            textarea{
+                border-top:0px;
+                min-height:150px;
+            }
+        }
+
+    </style>
+    <script src="/tolgarith/gerosoup.js"></script>
+</head>
+<body>
+    <script>
+        const vp = new Viewport(window.innerWidth,window.innerHeight);
+        const scene = new Scene(vp);
+        const ui = scene.ui;
+        scene.start()
+
+        let fractionAccuracy = 16;
+        let feetScale = 30;
+        let inchScale = feetScale / 12;
+
+        let baseData = {
+            walls:[],
+            redo:[],
+            wallThickness:1,
+            snapDistance:10, 
+            renderGrid:true,
+            showTips:true,
+            invert:false
+        };
+
+        if(localStorage.save){
+            let data = JSON.parse(localStorage.save);
+            for(let key in data){
+                baseData[key] = data[key];
+            }
+        }
+
+        const save = new Proxy(baseData,{
+            set(target, key, value) {
+                target[key] = value;
+                localStorage.save = JSON.stringify(target);
+            },
+            get(target,key){
+                return target[key];
+            }
+        });
+
+        //#TODO for now....
+        save.walls = [];
+        save.redo = [];
+
+
+        updateInvert();
+
+        let active;
+
+        function cameraScaled(n){
+            return n / scene.camera.scale.x;
+        }
+
+        function renderWall(ctx,start,end){
+            ctx.lineWidth = cameraScaled(2);
+            ctx.strokeStyle = '#fff';
+            ctx.strokeCircle(
+                start.x,
+                start.y,
+                save.snapDistance
+            );
+
+            ctx.strokeCircle(
+                end.x,
+                end.y,
+                save.snapDistance
+            );
+
+            ctx.lineWidth = cameraScaled(save.wallThickness * inchScale);
+
+            if(start.x === end.x || start.y === end.y){
+                ctx.strokeStyle = '#fff';
+            }else{
+                ctx.strokeStyle = '#f80';
+            }
+
+            ctx.beginPath();
+            ctx.lineTo(start.x,start.y);
+            ctx.lineTo(end.x,end.y);
+            ctx.stroke();
+
+            let distance = start.distanceTo(end);
+            let direction = start.directionTo(end);
+            
+            let feet = Math.floor(distance / feetScale);
+            let inches = Math.floor( (distance/inchScale) % 12);
+            const mid = start.duplicate();
+            mid.lerp(end,0.5);
+            
+            const r = Math.atan2(direction.x,direction.y) + Math.PI * 0.5;
+            ctx.lineWidth = cameraScaled(2);
+            ctx.beginPath();
+            ctx.lineTo(mid.x,mid.y);
+            mid.x += Math.sin(r) * 30;
+            mid.y += Math.cos(r) * 30;
+            ctx.lineTo(mid.x,mid.y);
+            ctx.stroke();
+            mid.x += Math.sin(r) * 20;
+            mid.y += Math.cos(r) * 20;
+
+            ctx.fillText(feet.toFixed(2)+"' "+inches+'"',mid.x,mid.y);
+        }
+
+
+        addEventListener('wheel',function(e){
+            const n = e.deltaY * 0.001;
+
+            scene.camera.scale.x -= n;
+            scene.camera.scale.y -= n;
+
+            scene.camera.position.x -= canvas.width* n;
+            scene.camera.position.y -= canvas.height * 0.5 * n;
+
+        },false);
+
+        document.body.addEventListener('keydown',function(e){
+            if(e.key === 'z'){
+                if(Keys.Shift){
+                    if(save.redo.length > 0){
+                        save.walls.push(save.redo.pop());
+                    }
+                }else{
+                    if(save.walls.length > 0){
+                        save.redo.push(save.walls.pop());
+                    }
+                }
+            }else if(e.key === 'g'){
+                save.renderGrid = !save.renderGrid;
+            }else if(e.key === 'h'){
+                save.showTips = !save.showTips;
+            }else if(e.key === 'i'){
+                save.invert = !save.invert;
+                updateInvert();
+            }
+        },false)
+
+        function updateInvert(){ // quick and hacky for now
+            if(save.invert){
+                const style = document.createElement('style');
+                style.textContent = 'canvas{filter:invert(1);}';
+                document.body.appendChild(style);
+                style.className = 'invert';
+            }else{
+                let elements = document.querySelectorAll('.invert');
+                for(let i = 0; i < elements.length; i++){
+                    elements[i].remove();
+                }
+            }
+        }
+
+        window.addEventListener('resize',function(){
+            vp.resize(window.innerWidth,window.innerHeight);
+        },false);
+
+        addEventListener('mousemove',function(e){
+            if(Mouse.right){
+                scene.camera.position.x -= e.movementX;
+                scene.camera.position.y -= e.movementY;
+            }
+        },false)
+
+        function Main(){
+            
+            this.render = function(ctx){
+
+                ctx.lineWidth = cameraScaled(1);
+                if(save.renderGrid){
+                    ctx.strokeStyle = '#444';
+                    const m = snapTo(vp.mouse.duplicate());
+                    const n = 15;
+                    const scale = Keys.Shift ? inchScale : feetScale;
+                    ctx.lineWidth = 0.25;
+                    for(let x = -n; x <= n; x++){
+                        for(let y = -n; y <= n; y++){
+                            ctx.strokeRect(m.x+x*scale,m.y+y*scale,scale,scale);
+                        }
+                    }
+                }
+                ctx.strokeStyle = '#fff';
+                ctx.fillStyle = '#fff';
+
+                ctx.lineWidth = cameraScaled(2);
+                vp.mouse = snapTo(vp.mouse);
+                ctx.strokeCircle(vp.mouse.x,vp.mouse.y,4);
+
+                ctx.textAlign = 'center';
+                for(let wall of save.walls){
+                   renderWall(ctx,wall.start,wall.end);
+                }
+                if(active){
+                   renderWall(ctx,active.start,vp.mouse);
+                }
+                if(save.showTips){
+                    ui.color1 = '#000';
+                    ui.color2 = '#fff';
+                    ui.x = 10;
+                    ui.y = 10;
+                    ui.buttonWidth = 250;
+                    ui.buttonHeight = 50;
+                    ui.textBG('H - toggle help menu (this)');
+                    ui.textBG("G - toggle grid");
+                    ui.textBG("Z - undo");
+                    ui.textBG("Hold shift to snap by inches");
+                    ui.textBG("orange indicates a line that is diagonal");
+                }
+
+            }
+            this.update = function(delta){
+                if(Mouse.left){
+                    Mouse.left = false;
+                    if(!active){
+                        active = {
+                            start:vec2(
+                                vp.mouse.x,
+                                vp.mouse.y,
+                            ),
+                            type:'wall'
+                        }
+
+                        active.start = snapTo(active.start);
+
+                        for(let wall of save.walls){
+                            if(wall.start.distanceTo(active.start) < save.snapDistance){
+                                active.start = wall.start;
+                            }
+                            if(wall.end.distanceTo(active.start) < save.snapDistance){
+                                active.start = wall.end;
+                            }
+                        }
+
+                    }else{
+                        active.end = vec2(
+                            vp.mouse.x,
+                            vp.mouse.y
+                        )
+
+                        active.end = snapTo(active.end);
+                        
+                        for(let wall of save.walls){
+                            if(wall.start.distanceTo(active.end) < save.snapDistance){
+                                active.end = wall.start;
+                            };
+                            if(wall.end.distanceTo(active.end) < save.snapDistance){
+                                active.end = wall.end;
+                            };
+                        }
+
+                        save.walls.push(active);
+                        active = false;
+
+                    }
+                }
+            }
+        }
+
+        scene.add(new Main());
+
+        function snapTo(v){
+            if(!save.renderGrid){
+                return v;
+            }
+            if(Keys.Shift){
+                v.x = Math.round(v.x / inchScale) * inchScale;
+                v.y = Math.round(v.y / inchScale) * inchScale;
+            }else{
+                v.x = Math.round(v.x / feetScale) * feetScale;
+                v.y = Math.round(v.y / feetScale) * feetScale;
+            }
+            return v;
+        }
+
+        /*
+        window.onload = () => {
+            "use strict";
+            if ("serviceWorker" in navigator && document.URL.split(":")[0] !== "file") {
+                navigator.serviceWorker.register("./sw.js");
+            }
+        }
+        */
+
+        const Inputs = {};
+        function createInput(type,title){
+            const span = document.createElement('span');
+            span.className = 'inputContainer';
+            const text = document.createElement('span');
+            text.textContent = title || type;
+            const input = document.createElement('input');
+            //input.placeholder = title || type;
+            Inputs[type] = input;
+            span.appendChild(text);
+            span.appendChild(input);
+            document.body.appendChild(span);
+            return input;
+        }
+
+        function decimalToFraction(d,f){
+
+            //I'm sure there's a way to calculate this but I'm really tired and need to finish this in 20 minutes 
+            const larger = {
+                '8/16':'1/2',
+                '4/16':'1/4',
+                '12/16':'3/4',
+                '0/16':''
+            }
+
+            for(let i = 0; i <= f; i++){
+                if(d <= i/f){
+                    if(i < 0.001){
+                        return '';
+                    }
+                    const n = i+'/'+f;
+                    return ' '+(larger[n]||n);
+                }
+            }
+            return '';
+        }
+
+        createInput('feet','Feet & Inches').addEventListener('input',function(e){
+            parseInputImperial(e.target.value);
+        });
+
+        createInput('meters','Meters').addEventListener('input',function(e){
+           parseMetricInput(e.target.value);
+        });
+
+        function Measurement(str){
+
+            if(str){
+                let feet = 0;
+                let inches = 0;
+                let buffer = '';
+                let feetSet = false;
+                for(let i = 0; i < str.length; i++){
+                    const c = str[i];
+                    if(c === '"'){
+                        inches = parseFloat(buffer,10);
+                        buffer = '';
+                    }else if(c === "'"){
+                        if(feetSet){
+                            output.value = 'error! double foot definition'
+                            return;
+                        }else{    feetSet = true;
+                            feet = parseFloat(buffer,10);
+                            buffer = '';
+                        }
+                    }else if(c === ' ' && str.indexOf('"') == -1 && str.indexOf("'") == -1){
+                        if(feetSet){
+                            inches = parseFloat(buffer,10);
+                            buffer = '';
+                            break;
+                        }else{
+                            feetSet = true;
+                            feet = parseFloat(buffer,10);
+                            buffer = '';
+                        }
+                    }else{
+                        buffer += c;
+                    }
+                }
+
+                if(buffer.length > 0){
+                    if(!feetSet){
+                        feet = parseFloat(buffer,10);
+                    }else{
+                        const n = parseFloat(buffer,10);
+                        if(!isNaN(n)){
+                            inches = n;
+                        }
+                    }
+                }
+
+                if(isNaN(feet)){
+                    feet = 0;
+                }
+                
+                if(isNaN(inches)){
+                    inches = 0;
+                }
+                this.inches = inches;
+                this.feet = feet;
+                let m = feet * 12.0 + inches;
+                this.meters = (m / 12) * 0.3048;
+            }else{
+                this.meters = 0;
+                this.feet = 0;
+                this.inches = 0;
+            }
+
+            return {
+                meters:this.meters,
+                set feet(n){
+                    this.meters = n * 0.3048;
+                },
+                set inches(n){
+                    this.meters = (n / 12) * 0.3048;
+                },
+                get feet(){
+                    return this.meters / 0.3048;
+                },
+                get inches(){
+                    return (this.meters / 0.3048) * 12;
+                },
+                get imperial(){
+                    let totalFeet = this.meters / 0.3048;
+                    let feet = Math.floor(totalFeet);
+                    let inches = ((totalFeet * 12) % 12).toFixed(2);
+                    return feet + "' "+inches+'"';
+                }
+            }
+
+        }
+
+        function parseInputImperial(input){
+            Inputs.meters.value = '';
+            let tokens = [];
+
+            let buffer = '';
+            let i = 0;
+            
+            while( i < input.length){
+                const c = input[i];
+                if(c === '+' || c === '-' || c === '*'){
+                    tokens.push(Measurement(buffer));
+                    buffer = '';
+                    tokens.push(c);
+                }else{
+                    buffer += c;
+                }
+                i++;
+            }
+
+            tokens.push(Measurement(buffer));
+            
+            console.log(tokens);
+
+            let out = tokens[0];
+            
+            let last;
+            i = 1;
+            while(i < tokens.length){
+                let t = Measurement();
+                let c = tokens[i];
+                if(c === '-'){
+                    console.log('sub '+tokens[i+1].imperial);
+                    out.meters -= tokens[i+1].meters;
+                    console.log(t.imperial);
+                    i++;
+                }else if(c === '+'){
+                    console.log('add '+tokens[i+1].imperial);
+                    out.meters += tokens[i+1].meters;
+                    console.log(t.imperial);
+                    i++;
+                }
+                i++;
+            }
+
+            console.log(out.imperial);
+
+            // #TODO use the new measurement object
+            const feet = out.feet;
+            const inches = out.inches - out.feet * 12;
+            calculateOutput(feet,inches);
+            const meters = (feet + (inches / 12)) * 0.3048 
+            output.value += 'Metric\n'+meters+'m';
+        }
+
+        function parseMetricInput(input){
+            Inputs.feet.value = '';
+            const meters = parseFloat(input,10);
+            calculateOutput(meters*3.28084,0);
+            output.value += 'Metric\n'+meters+'m';
+        }
+
+        function calculateOutput(feet,inches){
+            feet += Math.floor(inches / 12);
+            inches = inches % 12;
+            const n = fractionAccuracy;
+            const fr = feet % Math.floor(feet);
+            inches += fr * 12.0;
+            const ir = inches % Math.floor(inches);
+            output.value = 'Imperial\n'
+            output.value += `${Math.floor(feet)}' ${inches.toFixed(2)}"\n`;
+            output.value += `${Math.floor(feet)}' ${Math.floor(inches)+decimalToFraction(ir,n)}"\n`;
+        }
+
+        const output = document.createElement('textarea');
+        document.body.appendChild(output);
+
+        createInput("fraction","Fraction Size").addEventListener('input',(e) => {
+            
+            fractionAccuracy = parseInt(e.target.value,10);
+            if(Inputs.feet.value){
+                parseInputImperial(Inputs.feet.value);
+            }else if(Inputs.meters.value){
+                parseMetricInput(Inputs.meters.value);
+            }
+
+        });
+
+        Inputs.fraction.value = 16;
+
+        const floorplanInput = createInput("floorplan","Floorplan");
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 800;
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#fff';
+
+        function render(input){
+            if(input.length > 0){
+                canvas.style.display = 'block';
+
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.save();
+                ctx.translate(canvas.width*0.5,canvas.height*0.5);
+
+                const tokens = input.split(',');
+                
+                let points = [vec2(0,0)];
+
+                let directions = {
+                    'u':vec2(0,-1),
+                    'l':vec2(-1,0),
+                    'r':vec2(1,0),
+                    'd':vec2(0,1)
+                }
+
+                let cursor = vec2(0,0);
+                let center = vec2(0,0);
+                let measurements = [];
+                for(let t of tokens){
+                    t = t.trim();
+                    let parts = t.split(' ');
+                    let direction = parts.shift();
+                    if(direction){
+                        let m = Measurement(parts.join(' '));
+                        measurements.push(m);
+                        cursor.x += directions[direction].x * m.feet;
+                        cursor.y += directions[direction].y * m.feet;
+
+                        points.push(cursor.duplicate())
+                    }
+                }
+
+                console.log(center.x,center.y);
+
+                for(let p of points){
+                    center.x += p.x;
+                    center.y += p.y;
+                }
+
+                center.x /= (points.length - 1);
+                center.y /= (points.length - 1);
+
+                const bb = getBoundingBox(points);
+                ctx.strokeStyle = 'red';
+                console.log(bb);
+
+                let furthest = Math.max(bb.width,bb.height);
+
+                bb.x /= furthest;
+                bb.y /= furthest;
+                bb.width /= furthest;
+                bb.height /= furthest;
+
+                bb.x *= canvas.width;
+                bb.y *= canvas.height;
+                bb.width *= canvas.width;
+                bb.height *= canvas.height;
+
+                ctx.lineWidth = cameraScaled(5);
+                ctx.strokeRect(bb.x-bb.width*0.5,bb.y+bb.height*0.5,bb.width,bb.height);
+
+                function process(v){
+                    v.x /= furthest;
+                    v.y /= furthest;
+                    v.x *= canvas.width;
+                    v.y *= canvas.height;
+                    v.x -= bb.width * 0.5;
+                    v.y += bb.height * 0.5;
+                    v.y *= 0.8;
+                    v.x *= 0.8;
+                }
+
+                for(let p of points){
+                    process(p);
+                }
+
+                process(center);
+                
+                ctx.strokeStyle = '#fff';
+
+                ctx.beginPath();
+
+                for(let p of points){
+                    ctx.lineTo(p.x,p.y);
+                }
+
+                ctx.stroke();
+                ctx.lineWidth = cameraScaled(2);
+                ctx.textAlign = 'center';
+                for(let p of points){
+                    ctx.strokeCircle(p.x,p.y,10);
+                    ctx.fillText('X',p.x,p.y);
+                }
+
+                ctx.font = '16px sanserif';
+                for(let i = 0; i < points.length; i++){
+                    if(measurements[i]){
+                        const a = points[i];
+                        const b = points[i+1];
+                        let direction = points[i].directionTo(points[i+1]);
+                        a.lerp(b,0.5);
+                        const r = Math.atan2(direction.x,direction.y) - Math.PI * 0.5;
+                        const ox = Math.sin(r) * 40;
+                        const oy = Math.cos(r) * 40;
+                        ctx.fillText(measurements[i].imperial,a.x+ox,a.y+oy);
+                    }
+                }
+
+                ctx.restore();
+
+            }else{
+                canvas.style.display = 'none';
+            }
+
+        }
+
+        function getBoundingBox(points){
+            let maxX = 0;
+            let maxY = 0;
+            let minX = Infinity;
+            let minY = Infinity;
+            for(let p of points){
+                if(p.x > maxX){
+                    maxX = p.x;
+                }else if(p.x < minX){
+                    minX = p.x;
+                }
+                if(p.y > maxY){
+                    maxY = p.y;
+                }else if(p.y < minY){
+                    minY = p.y;
+                }
+            }
+            return {
+                x:minX,
+                y:minY,
+                width:maxX-minX,
+                height:maxY-minY
+            }
+        }
+
+        floorplanInput.addEventListener('input',function(e){
+            localStorage.floorplan = e.target.value;
+            render(e.target.value);
+        });
+
+        if(localStorage.floorplan){
+            floorplanInput.value = localStorage.floorplan;
+            render(floorplanInput.value);
+        }
+
+
+    </script>
+</body>
+</html>

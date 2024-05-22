@@ -61,6 +61,9 @@ Math.randomIntRange = function(min,max){
     return Math.floor(Math.random() * (max - min) + min);
 }
 
+Array.prototype.random = function(){
+    return this[Math.floor(Math.random()*this.length)];
+}
 window.addEventListener('contextmenu',function(e){
     e.preventDefault();
     return false;
@@ -173,6 +176,16 @@ CanvasRenderingContext2D.prototype.setFontName = function(n){
     this.font = this.fontSize + 'px '+this.fontName;
 }
 
+Object.prototype.random = function(){
+    const k = Object.keys(this);
+    return this[k[Math.floor(Math.random()*k.length)]];
+}
+
+Object.prototype.randomKey = function(){
+    const k = Object.keys(this);
+    return k[Math.floor(Math.random()*k.length)];
+}
+
 //===============================================
 // Vector2 
 //===============================================
@@ -208,6 +221,11 @@ Vector2.prototype.toString = function(){
     return `X:${this.x}, Y:${this.y}`;
 }
 
+Vector2.prototype.lerp = function(b,amount){
+    this.x = Math.lerp(this.x,b.x,amount);
+    this.y = Math.lerp(this.y,b.y,amount);
+}
+
 Vector2.prototype.length = function(){
     return Math.sqrt(Math.pow(this.x,2) + Math.pow(this.y,2));
 }
@@ -217,6 +235,11 @@ Vector2.prototype.normalize = function(){
     this.x /= l;
     this.y /= l;
     return this;
+}
+
+Vector2.prototype.divide = function(v2){
+    this.x /= v2.x;
+    this.y /= v2.y;
 }
 
 Vector2.prototype.distanceSquaredTo = function(v2){
@@ -401,6 +424,17 @@ window.addEventListener('mousedown',function(e){
     Mouse.position.y = e.clientY;
     Signals.emit('mousedown')
 },false);
+
+window.addEventListener('touchstart',function(e){
+    Mouse.left = true;
+    Signals.emit('mousedown')
+},false);
+
+window.addEventListener('touchend',function(e){
+    Mouse.left = false;
+    Signals.emit('mousedown')
+},false);
+
 
 window.addEventListener('mouseup',function(e){
     Mouse[MouseButtons[e.button]] = false;
@@ -810,6 +844,10 @@ class GRUI{
     button(text,nx=this.x,ny=this.y,mpx=this.viewport.mouse.x,mpy=this.viewport.mouse.y){
         return this.buttonUI(text,nx,ny,mpx,mpy);
     }
+    step(x,y){
+        this.x += this.buttonWidth * x;
+        this.y += this.buttonHeight * y;
+    }
     buttonUI(text,nx=this.x,ny=this.y,mpX=Mouse.position.x,mpY=Mouse.position.y){
         const ctx = this.viewport.ctx;
         this.x = nx;
@@ -824,11 +862,13 @@ class GRUI{
             ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y+this.buttonHeight*0.5);
             inside = true;
         }else{
-            ctx.fillStyle = this.color1;
             ctx.strokeStyle = this.color1;
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
+            ctx.fillStyle = this.color2;
+            ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
             ctx.strokeRect(this.x+0.5,this.y+0.5,this.buttonWidth,this.buttonHeight);
+            ctx.fillStyle = this.color1;
             ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y+this.buttonHeight*0.5)
         }
 
@@ -841,16 +881,15 @@ class GRUI{
         this.x = nx;
         this.y = ny;
 
-        ctx.fillStyle = this.color2;
+        ctx.fillStyle = this.color1;
         const size = ctx.measureText(text);
         const height = Math.abs(size.actualBoundingBoxAscent + size.actualBoundingBoxDescent);
         const width = size.width;
-        ctx.fillRect(this.x,this.y,width,height);
-        ctx.fillStyle = this.color1;
+        ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
+        ctx.fillStyle = this.color2;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text,this.x+width*0.5,this.y+this.buttonHeight*0.5);
-
+        ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y + this.buttonHeight * 0.5 + 1);
         this.y += this.buttonHeight * this.offsetDirection.y * this.spacing;
         this.x += this.buttonWidth * this.offsetDirection.x * this.spacing;
     }
@@ -858,10 +897,14 @@ class GRUI{
         const ctx = this.viewport.ctx;
         this.x = nx;
         this.y = ny;
+
+        const size = ctx.measureText(text);
+        const height = Math.abs(size.actualBoundingBoxAscent + size.actualBoundingBoxDescent);
+        const width = size.width;
         ctx.fillStyle = this.color1;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(text,this.x,this.y);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y + this.buttonHeight * 0.5 + 1);
         this.y += this.buttonHeight * this.offsetDirection.y * this.spacing;
         this.x += this.buttonWidth * this.offsetDirection.x * this.spacing;
     }

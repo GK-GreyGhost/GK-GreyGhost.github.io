@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="/tolgarith/gerosoup.js"></script>
+</head>
+<body>
+    <script>
+        const vp = new Viewport(window.innerWidth,window.innerHeight);
+        const scene = new Scene(vp);
+        const ui = scene.ui;
+        scene.start()
+
+        let state = 0;
+        let stateCount = 1;
+        let seed = Math.floor(Math.random() * 99999999);
+
+        window.addEventListener('resize',function(){
+            vp.resize(window.innerWidth,window.innerHeight);
+        },false);
+
+        function Game(){
+
+        }
+
+        function success(){
+            alert("GOOD BOY!");
+            seed = Math.floor(Math.random() * 99999999);
+            state = Math.floor(Math.random() * stateCount);
+        }
+
+        function fail(){
+            alert("FAILED!")
+            seed = Math.floor(Math.random() * 99999999);
+            state = Math.floor(Math.random() * stateCount);
+        }
+
+        Game.prototype.render = function(ctx){
+            if(state === 0){
+                ctx.font = '70px helvetica';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#000';
+                ctx.fillText('Click the red button',vp.canvas.width/2,vp.canvas.height-100);
+                ctx.font = '30px helvetica';
+                ui.buttonWidth = 200;
+                ui.buttonHeight = 200;
+                ui.color1 = 'white';
+                ui.color2 = 'red';
+                const n = 150;
+                if(ui.button('CLICK ME',vp.canvas.width/2-n,vp.canvas.height/2-n)){
+                    Mouse.left =false;
+                    success();
+                }
+
+                ui.color1 = 'white';
+                ui.color2 = 'blue';
+                if(ui.button('CLICK ME',vp.canvas.width/2+n,vp.canvas.height/2+n)){
+                    Mouse.left =false;
+                    fail();
+                }
+
+                ui.color1 = 'white';
+                ui.color2 = 'green';
+                if(ui.button('CLICK ME',vp.canvas.width/2+n,vp.canvas.height/2-n)){
+                    Mouse.left =false;
+                    fail();
+                }
+
+                ui.color1 = 'white';
+                ui.color2 = 'orange';
+                if(ui.button('CLICK ME',vp.canvas.width/2-n,vp.canvas.height/2+n)){
+                    Mouse.left =false;
+                    fail();
+                }
+            }
+
+        }
+
+        scene.add(new Game());
+
+    </script>
+</body>
+</html>
