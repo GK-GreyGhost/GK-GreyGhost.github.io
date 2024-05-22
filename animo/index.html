@@ -5,17 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
+        
         *{
+            position:relative;
             box-sizing:border-box;
             font-family:Arial, Helvetica, sans-serif;
+        }
+
+        html,body{
+            margin:0px;
+            padding:0px;
         }
 
         body{
             text-align:center;
             margin:auto;
             max-width:1024px;
-            margin-bottom:150px;
-            margin-top:100px;
+
         }
 
         .header-image{
@@ -23,6 +29,7 @@
             max-width:800px;
             margin-top:100px;
             margin-bottom:200px;
+            filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5));
         }
 
         div{
@@ -84,6 +91,21 @@
             display:flex;
         }
 
+        .header-background{
+            margin:0px;
+            padding:0px;
+            position:absolute;
+            top:0px;
+            left:0px;
+            width:100vw;
+            height:800px;
+            filter:brightness(1) contrast(0.75) saturate(1.0);
+            opacity:0.5;
+            background-image:url('i/img3.jpeg');
+            background-position: center center;
+            background-size: cover;
+        }
+
         @media only screen and (max-width: 768px) {
             body{
                 max-width:100%;
@@ -97,7 +119,7 @@
     </style>
 </head>
 <body>
-
+    <div class="header-background"></div>
     <img class="header-image" src="animo.svg" alt="Animo Coffee">
 
     <nav>
@@ -106,9 +128,10 @@
             <a href="#aboutus">About Us</a>
             <a href="#faq">FAQ</a>
             <a href="#menu">Menu</a>
-            <a href="https://forms.gle/5ngpzEUdnhG5wb5q6">Quote</a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfjOcbOCccZhpnM-PRGyx9pijF-uDBt9supz_VrDbUsHVmF6w/viewform">Quote</a>
         </div>
     </nav>
+
     <h3 id="mission">Our Mission</h3>
     <div>
         In Spanish, Ánimo describes the spirit of inspiration and encouragement. Its purpose is to uplift others and spread joy. From a handcrafted cart, to vendor sourcing, Ánimo Coffee operates with intent as we humbly set out on our path to brick and mortar. All throughout this journey, we believe in the spirit of Ánimo to keep ourselves centered and the community at the forefront.  
