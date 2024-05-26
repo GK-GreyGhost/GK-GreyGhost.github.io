@@ -3,34 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Animo Coffee - </title>
+    <link rel="shortcut icon" type="image/ioc" href="animo.ico"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="ii/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="ii/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="ii/favicon-16x16.png">
+    <link rel="manifest" href="manifest.json">
     <style>
+
+        :root {
+        --main-color: #296414;
+        }
+
+
         *{
             box-sizing:border-box;
             font-family:Arial, Helvetica, sans-serif;
+            position:relative;
+            margin:auto;
+            padding:0px;
+
         }
 
         body{
-            text-align:center;
             margin:auto;
-            max-width:1024px;
+            text-align:center;
             margin-bottom:150px;
-            margin-top:100px;
+        }
+
+        .header-wrapper{
+            margin:auto;
+            position:absolute;
+            top:50px;
+            left:0px;
+            bottom:0px;
+            right:0px;
+            margin:auto;
+            color:#fff;
+        }
+
+        .mission{
+            width:50%;
+            font-weight:bold;
+            filter: drop-shadow(0px 0px 6px rgba(0,0,0,0.8));
         }
 
         .header-image{
-            width:100%;
-            max-width:800px;
-            margin-top:100px;
-            margin-bottom:200px;
+            width:80vmin;
+            filter: drop-shadow(0px 0px 6px rgba(0,0,0,0.8));
         }
 
-        div{
+        h1,h2,h3,h4,h5,h6{
+            color:var(--main-color);
+        }
+
+        .section{
             padding:25px;
             margin:25px;
+            width:600px;
         }
 
-        ol{
+        ul{
             text-align:left;
         }
 
@@ -44,26 +77,66 @@
         }
 
         .quoteLink{
+            display:block;
+            margin:75px;
             font-size:2em;
         }
 
         nav{
-            position:fixed;
+            height:50px;
+            width:100%;
+            margin:0px;
+            color:#fff;
+            text-align:center;
+            position:absolute;
             bottom:0px;
             left:0px;
+            right:0px;
+        }
+
+        .nav-wrapper{
+            margin:auto;
+            max-width:1024px;
             width:100%;
-            text-align:center;
-            background:#000;
+            padding:0px;            
+            display:flex;
+        }
+
+        img{
+            max-width:100%;
+            max-height:100%;
+            margin:auto;
+        }
+
+        .side-display{
+            width:33%;
         }
 
         nav a{
             width:100%;
+            height:50px;
+            line-height:27px;
+            vertical-align: middle;
             display:inline-block;
             padding:10px;
             font-size:1em;
             color:#fff;
             text-decoration: none;
-            font-weight:400;
+            font-weight:bold;
+            filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.8));
+        }
+
+        .menu-container{
+            display:flex;
+            justify-content: center;
+            margin:50px;
+        }
+
+        nav a:hover{
+            color:#000;
+            filter:none;
+            background-color:#fff;
+            text-decoration: none;
         }
 
         a{
@@ -76,16 +149,60 @@
             text-decoration: underline;
         }
 
-        .nav-wrapper{
-            margin:auto;
-            max-width:1024px;
+        .header-container{
+            width:100vw;
+            height:80vh;
+            background-color:#000;
+            margin-bottom:75px;
+            overflow:hidden;
+        }
+
+        .background-image{
             width:100%;
-            padding:0px;            
+            height:100%;
+            display:inline-block;
+            filter:brightness(0.6) blur(8px);
+            background-image:url("i/crop1.jpg");
+            background-size:cover;
+            background-position:center center;
+            overflow:hidden;
+        }
+
+        .menu-image{
+            width:100%;
+            height:600px;
+            margin:5px;
+            object-fit: cover;
+            object-position:center center;
+        }
+
+        .content{
+            max-width:80%;
+            text-align:center;
+        }
+
+        .social_link{
+            position:absolute;
+            left:10px;
+            bottom:10px;
+            width:48px;
+            height:48px;
+            z-index:999;
+        }
+
+        .gallery-line{
             display:flex;
         }
 
+        ul ul{
+            left:25px;
+            color:var(--main-color);
+        }
+
+       
+
         @media only screen and (max-width: 768px) {
-            body{
+            .content{
                 max-width:100%;
             }
 
@@ -97,108 +214,134 @@
     </style>
 </head>
 <body>
-
-    <img class="header-image" src="animo.svg" alt="Animo Coffee">
-
-    <nav>
-        <div class="nav-wrapper">
-            <a href="#mission">Our Mission</a>
-            <a href="#aboutus">About Us</a>
-            <a href="#faq">FAQ</a>
-            <a href="#menu">Menu</a>
-            <a href="https://forms.gle/5ngpzEUdnhG5wb5q6">Quote</a>
+    <div class="header-container">
+        <div class="background-image"></div>
+        <div class="header-wrapper">
+            <img class="header-image" src="animo_white.svg" alt="Animo Coffee">
+            <p class="mission">In Spanish, Ánimo describes the spirit of inspiration and encouragement. Its purpose is to uplift others and spread joy. From a handcrafted cart, to vendor sourcing, Ánimo Coffee operates with intent as we humbly set out on our path to brick and mortar. All throughout this journey, we believe in the spirit of Ánimo to keep ourselves centered and the community at the forefront.  </p>
         </div>
-    </nav>
-    <h3 id="mission">Our Mission</h3>
-    <div>
-        In Spanish, Ánimo describes the spirit of inspiration and encouragement. Its purpose is to uplift others and spread joy. From a handcrafted cart, to vendor sourcing, Ánimo Coffee operates with intent as we humbly set out on our path to brick and mortar. All throughout this journey, we believe in the spirit of Ánimo to keep ourselves centered and the community at the forefront.  
+        <a class="social_link" href="//www.instagram.com/animocoffee.la/"><img src="ii/Instagram_Glyph_White.svg" alt="Instagram"></a>
+        <nav>
+            <div class="nav-wrapper">
+                <a href="#aboutus">About Us</a>
+                <a href="#faq">FAQ</a>
+                <a href="#menu">Menu</a>
+                <a href="https://forms.gle/Nrc8ihoLmuKH21dY8">Quote</a>
+            </div>
+        </nav>
     </div>
-    
-    <h3 id="aboutus">About Us</h3>
-    <div>
-        Ánimo coffee aims at spreading more good through specialty coffee. Backed by professional barista experience, Ánimo coffee is committed to providing café level quality beverages at any event. 
+
+    <div class="menu-container">
+        <div style="side-display">
+            <h3 id="aboutus">About Us</h3>
+            <div class="section">
+                Ánimo coffee aims at spreading more good through specialty coffee.<br/> Backed by professional barista experience, Ánimo coffee is committed to providing café level quality beverages at any event. 
+            </div>
+        </div>
+        <div>
+            <div class="gallery-line">
+                <img class='menu-image' src="i/crop1.jpg" alt="">
+            </div>
+        </div>
     </div>
+
+    <div class="menu-container">
+        <div style="side-display">
+            <h3 id="menu">Menu</h3>
+            <div class="section">
+                Our catering menu is curated to offer options ranging from espresso, to lattes, both hot and iced. 
+                <br><br>
+                We offer house-made vanilla and honey syrups to flavor any drink as well as hot chocolate. 
+                <br><br>
+                We believe in making moments unique and special for others, including your guests, so we offer the option of collaborating on a beverage that’s unique for your event. 
+            </div>
+        </div>
     
+        <div>
+            <div class="gallery-line">
+                <img class='menu-image' src="i/v2-165.jpg" alt="REPLACE ME">
+                <img class='menu-image' src="i/v2-169.jpg" alt="REPLACE ME">
+                <img class='menu-image' src="i/v2-171.jpg" alt="REPLACE ME">
+            </div>
+            <div class="gallery-line">
+             <img class='menu-image' src="i/v2-163.jpg" alt="REPLACE ME">
+             <img class='menu-image' src="i/v2-155.jpg" alt="REPLACE ME">
+             <img class='menu-image' src="i/v2-104.jpg" alt="REPLACE ME">
+            </div>
+        </div>
+    </div>
+
     <h3 id="faq">FAQ</h3>
-    <div>
-        <ol> <!--Ordered List -->
+    <div class="faq-container">
+        <ul> <!--Ordered List -->
             
             <li>What is "specialty coffee"?</li>
-                <ol>
+                <ul>
                     <li>Specialty coffee can consistently exist through the dedication of the people who have made it their life's work to continually make <b>quality</b> their highest priority. Specialty coffee exists beginning with the farmer, green coffee buyer, roaster, barista and consumer. </li>
-                </ol>
+                </ul>
            
             <li>What is your pricing?</li>
-            <ol>
+            <ul>
                 <li>Pricing is based on estimated guest count, location and duration of your event.</li>
                 <li>Our minimum service time is 2 hours. Contact us for a quote!</li>
-            </ol>
+            </ul>
 
             <li>What events do you serve?</li>
-            <ol>
+            <ul>
                 <li>We specialize in catering for events of up to 80 people, including corporate gatherings, weddings, parties, and more. Our mobile setup allows us to bring the coffee experience directly to your venue with exceptional quality.</li>
-            </ol>
+            </ul>
 
             <li>How far in advance do I need to book your service for an event? </li>
-            <ol>
-                <li>We recommend booking 3 weeks in advance to ensure availability. However, we understand things come up last minute, so feel free to contact us and we’ll do our best to accommodate your needs.</li> </ol>
+            <ul>
+                <li>We recommend booking 3 weeks in advance to ensure availability. However, we understand things come up last minute, so feel free to contact us and we’ll do our best to accommodate your needs.</li> </ul>
             <li>What are your operating hours?</li>
 
-            <ol>
+            <ul>
                 <li>Our hours vary depending on the event schedule and location. We strive to be flexible and can adjust our hours to suit your event's needs.
                 </li>
-            </ol>
+            </ul>
 
             <li>What does the host need to provide? </li>
-            <ol>
+            <ul>
                 <li>One dedicated circuit and a crowd!
                 </li>
-            </ol>
+            </ul>
 
             <li>Are your beans ethically sourced? 
             </li>
 
-            <ol>
+            <ul>
                 <li>Yes, we are committed to sourcing our beans from reputable suppliers who prioritize ethical and sustainable practices. 
                 </li>
-            </ol>
+            </ul>
 
             <li>Who roasts your coffee?</li>
-            <ol>
+            <ul>
                 <li>New Home Coffee is our supplier for roasted beans. Headed by <a href='//www.coffeeinstitute.org/certification/people/q-graders'>Arabica Q-Grader</a> and small batch roaster, David Martinez, New Home Coffee has been in operation since 2023. </li>
-            </ol>
+            </ul>
 
             <li>Can we customize the coffee bar?</li>
-            <ol>
+            <ul>
                 <li>We believe in collaboration, and if customizing the cart is important to you, we want to help your vision come alive. Together, we can see what we can accommodate. 
                 </li>
-            </ol>
+            </ul>
 
             <li>How much space does the coffee bar take up? </li>
-            <ol>
+            <ul>
                 <li>The cart is 5’x2.5’, so about 6’x6’ working space is ideal. 
                 </li>
-            </ol>
+            </ul>
 
             <li>What kind of equipment do you bring to events? 
             </li>
-            <ol>
+            <ul>
                 <li>Our mobile setup includes professional-grade espresso machines, grinders, brewing equipment, and all the necessary tools to create high-quality coffee beverages on-site. We ensure that our equipment is well-maintained and up to industry standards
                 </li>
-            </ol>
-        </ol>
+            </ul>
+        </ul>
     </div>
 
-    <h3 id="menu">Menu</h3>
-    <div>
-        Our catering menu is curated to offer options ranging from espresso, to lattes, both hot and iced. 
-        <br><br>
-        We offer house-made vanilla and honey syrups to flavor any drink as well as hot chocolate. 
-        <br><br>
-        We believe in making moments unique and special for others, including your guests, so we offer the option of collaborating on a beverage that’s unique for your event. 
+    <a class="quoteLink" href="https://forms.gle/Nrc8ihoLmuKH21dY8">Contact Us for Quote</a>
     </div>
-
-    <a class="quoteLink" href="https://forms.gle/5ngpzEUdnhG5wb5q6">Contact Us for Quote</a>
-
 </body>
 </html>
