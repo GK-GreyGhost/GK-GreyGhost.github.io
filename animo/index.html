@@ -31,7 +31,6 @@
             position:relative;
             margin:auto;
             padding:0px;
-            text-transform: uppercase;
 
         }
 
@@ -61,6 +60,7 @@
 
         .mission{
             width:50%;
+            max-width:80%;
             font-weight:bold;
             filter: drop-shadow(0px 0px 6px rgba(0,0,0,0.8));
         }
@@ -71,7 +71,7 @@
         }
 
         h1,h2,h3,h4,h5,h6{
-            color:var(--main-color);
+            color:#fff;
         }
 
         .section{
@@ -82,6 +82,21 @@
 
         ul{
             text-align:left;
+            margin:15px;
+            user-select: none;
+            -ms-user-select: none; 
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none; 
+            -khtml-user-select: none;
+            -moz-user-select: none; 
+        }
+
+        li:hover{
+            text-decoration: underline;
+        }
+
+        ul ul li:hover{
+            text-decoration: none;
         }
 
         li{
@@ -149,7 +164,7 @@
         nav a{
             width:100%;
             height:50px;
-            line-height:27px;footer
+            line-height:27px;
             vertical-align: middle;
             display:inline-block;
             padding:10px;
@@ -163,9 +178,8 @@
         .menu-container{
             display:flex;
             justify-content: center;
-            margin:250px 50px;
-            max-height:90%;
-            border:solid 1px red;
+            height:90vh;
+            max-width:80%;
         }
 
         nav a:hover{
@@ -176,7 +190,7 @@
         }
 
         a{
-            color:#000;
+            color:#fff;
             font-weight:bold;
             text-decoration:none;
         }
@@ -187,23 +201,24 @@
 
         .header-container{
             width:100vw;
-            height:80vh;
+            height:90vh;
             background-color:#000;
-            margin-bottom:75px;footer
+            margin-bottom:75px;
+        }
+        .background-image{
             width:100%;
             height:100%;
-            display:inline-block;
             filter:brightness(0.6) blur(8px);
             background-image:url("i/crop1.jpg");
             background-size:cover;
             background-position:center center;
-            overflow:hidden;
         }
 
         .menu-image{
             width:100%;
-            height:calc(100% - 70px);
             object-fit: cover;
+            height:100%;
+            max-height:calc(100% - 65px);
             margin:-5px 0px;
             object-position:center center;
         }
@@ -212,8 +227,9 @@
             background:rgba(0,0,0,1);
             z-index:999;
             color:#fff;
-            padding:25px;
-            height:70px;
+            height:71px;
+            line-height:35px;
+            padding:20px;
             text-align:right;
             text-transform: uppercase;
             font-weight:bold;
@@ -221,18 +237,19 @@
         }
 
         .image{
-            width:100%;
-            height:50%;
-            margin:5px;
+            display:block;
             object-fit: cover;
             object-position:center center;
+            width:100%;
+            height:100%;
+            margin:5px;
         }
         
         .menu-title-container{
-            display:inline-block;
             width:100%;
-            height:50%;
-            margin:5px;
+            height:100%;
+            max-height:100%;
+            overflow:hidden;
         }
 
         .content{
@@ -255,12 +272,14 @@
 
         ul ul{
             left:25px;
-            color:var(--main-color);
+            color:#fff;
+            font-weight:bold;
         }
 
         .faq-container{
-            width:80%;
-            max-width:1024px;
+            width:100%;
+            z-index:2;
+            display:block;
         }
 
         .social_link_bottom{
@@ -268,15 +287,55 @@
             height:64px;
         }
 
+
+        .section{
+            z-index:1;
+        }
+
+        .pop{
+            z-index:0;
+            border-radius:500px;
+            filter:blur(25px);
+            background:rgba(0,0,0,0.25);
+            width:100%;
+            height:100%;
+            position:absolute;
+            top:0px;
+            left:0px;
+            right:0px;
+            bottom:0px;
+            margin:auto;
+            z-index:-1;
+        }
+
         footer{
             bottom:0px;
             position:absolute;
             padding:10px;
             text-align:left;
-            opacity:0.33;
+            opacity:0.5;
             width:100%;
+            color:#fff;
         }
-       
+
+        footer a{
+            color:#fff;
+        }
+
+        #faq .faq-container, #faq .gallery-line{
+            width:50%;
+        }
+
+        .gallery-line{
+            height:50%;
+            margin:auto;
+        }
+
+        #faq .faq-container{
+            padding:50px;
+            color:#fff;
+        }
+
         @media(orientation:portrait){
         }
 
@@ -302,7 +361,9 @@
         <div class="header-wrapper">
             <img class="header-image" src="animo_white.svg" alt="Animo Coffee">
             <p class="mission">
-                Ánimo coffee aims at spreading more good through specialty coffee.<br/> Backed by professional barista experience, Ánimo coffee is committed to providing café level quality beverages at any event. 
+                Ánimo coffee aims at spreading more good through specialty coffee.
+                Backed by professional barista experience,
+                Ánimo coffee is committed to providing café level quality beverages at any event. 
             </p>
         </div>
         <a class="social_link" href="//www.instagram.com/animocoffee.la/"><img src="ii/Instagram_Glyph_White.svg" alt="Instagram"></a>
@@ -318,16 +379,15 @@
 
     <div id="aboutus" class="menu-container">
 
-        <div>
-            <div class="gallery-line">
-                <div class="menu-title-container"> <img class='image' src="i/crop1.jpg" alt=""></div>
-                <div class="menu-title-container"><img class='image' src="i/v2-138.jpg" alt=""></div>
-            </div>
+        <div class="gallery-line">
+            <div class="menu-title-container"> <img class='image' src="i/crop1.jpg" alt=""></div>
+            <div class="menu-title-container"><img class='image' src="i/v2-138.jpg" alt=""></div>
         </div>
 
         <div class="side-display">
-            <h3 >About Us</h3>
+            <h3 > <div class="pop"></div>About Us</h3>
             <div class="section">
+                <div class="pop"></div>
                 In Spanish, Ánimo describes the spirit of inspiration and encouragement. Its purpose is to uplift others and spread joy. From a handcrafted cart, to vendor sourcing, Ánimo Coffee operates with intent as we humbly set out on our path to brick and mortar. All throughout this journey, we believe in the spirit of Ánimo to keep ourselves centered and the community at the forefront.  
             </div>
         </div>
@@ -336,8 +396,9 @@
 
     <div id="menu" class="menu-container">
         <div class="side-display">
-            <h3 >Menu</h3>
+            <h3 > <div class="pop"></div>Menu</h3>
             <div class="section">
+                <div class="pop"></div>
                 Our catering menu is curated to offer options ranging from espresso, to lattes, both hot and iced. 
                 <br><br>
                 We offer house-made vanilla and honey syrups to flavor any drink as well as hot chocolate. 
@@ -346,9 +407,9 @@
             </div>
         </div>
     
-        <div>
+        <div style="height:100%; ">
             <div class="gallery-line">
-                <div class="menu-title-container"><img class='menu-image' src="i/v2-165.jpg" alt="Guatemala Cold Brew" title="Guatemala Cold Brew"><div class="image-label">Guatemala Cold Brew</div></div>
+                <div class="menu-title-container"><img class='menu-image' src="i/v2-165.jpg" alt="Cold Brew" title="Cold Brew"><div class="image-label">Cold Brew</div></div>
                 <div class="menu-title-container"><img class='menu-image' src="i/v2-169.jpg" alt="Wildflower Honey Latte" title="Wildflower Honey Latte"><div class="image-label">Wildflower Honey Latte</div></div>
                 <div class="menu-title-container"><img class='menu-image' src="i/v2-171.jpg" alt="Caffe Latte" title="Caffe Latte"><div class="image-label">Caffe Latte</div></div>
             </div>
@@ -365,89 +426,120 @@
             <img class='image' src="i/v2-138.jpg" alt="espresso">
             <img class='image' src="i/v2-111.jpg" alt="pastries">
            </div>
-        <div class="side-display">
-            <h3 >FAQ</h3>
-            <div class="faq-container">
-                <ul> <!--Ordered List -->
-                    
-                    <li>What is "specialty coffee"?</li>
-                        <ul>
-                            <li>Specialty coffee can consistently exist through the dedication of the people who have made it their life's work to continually make <b>quality</b> their highest priority. Specialty coffee exists beginning with the farmer, green coffee buyer, roaster, barista and consumer. </li>
-                        </ul>
+        <div class="faq-container">
+            <div class="pop"></div>
+            <h3 >  <div class="pop"></div> FAQ</h3>
+            <ul> <!--Ordered List -->
+                <div class="question">
                 
-                    <li>What is your pricing?</li>
-                    <ul>
-                        <li>Pricing is based on estimated guest count, location and duration of your event.</li>
-                        <li>Our minimum service time is 2 hours. Contact us for a quote!</li>
-                    </ul>
+                <li>What is "specialty coffee"?</li>
+                <ul>
+                    <li>Specialty coffee can consistently exist through the dedication of the people who have made it their life's work to continually make <b>quality</b> their highest priority. Specialty coffee exists beginning with the farmer, green coffee buyer, roaster, barista and consumer. </li>
+                </ul>
+                </div>
+                <div class="question">
 
-                    <li>What events do you serve?</li>
-                    <ul>
-                        <li>We specialize in catering for events of up to 80 people, including corporate gatherings, weddings, parties, and more. Our mobile setup allows us to bring the coffee experience directly to your venue with exceptional quality.</li>
-                    </ul>
+                <li>What is your pricing?</li>
+                <ul>
+                    <li>Pricing is based on estimated guest count, location and duration of your event.</li>
+                    <li>Our minimum service time is 2 hours. Contact us for a quote!</li>
+                </ul>
+                </div>
+                <div class="question">
+                <li>What events do you serve?</li>
+                <ul>
+                    <li>We specialize in catering for events of up to 80 people, including corporate gatherings, weddings, parties, and more. Our mobile setup allows us to bring the coffee experience directly to your venue with exceptional quality.</li>
+                </ul>
+</div>
+                <div class="question">
 
-                    <li>How far in advance do I need to book your service for an event? </li>
-                    <ul>
-                        <li>We recommend booking 3 weeks in advance to ensure availability. However, we understand things come up last minute, so feel free to contact us and we’ll do our best to accommodate your needs.</li> </ul>
-                    <li>What are your operating hours?</li>
+                <li>How far in advance do I need to book your service for an event? </li>
+                <ul>
+                    <li>We recommend booking 3 weeks in advance to ensure availability. However, we understand things come up last minute, so feel free to contact us and we’ll do our best to accommodate your needs.</li> </ul>
+</div>
+                <div class="question">
 
-                    <ul>
-                        <li>Our hours vary depending on the event schedule and location. We strive to be flexible and can adjust our hours to suit your event's needs.
-                        </li>
-                    </ul>
+                <li>What are your operating hours?</li>
 
-                    <li>What does the host need to provide? </li>
-                    <ul>
-                        <li>One dedicated circuit and a crowd!
-                        </li>
-                    </ul>
-
-                    <li>Are your beans ethically sourced? 
+                <ul>
+                    <li>Our hours vary depending on the event schedule and location. We strive to be flexible and can adjust our hours to suit your event's needs.
                     </li>
+                </ul>
 
-                    <ul>
-                        <li>Yes, we are committed to sourcing our beans from reputable suppliers who prioritize ethical and sustainable practices. 
-                        </li>
-                    </ul>
+                </div>
+                <div class="question">
 
-                    <li>Who roasts your coffee?</li>
-                    <ul>
-                        <li>New Home Coffee is our supplier for roasted beans. Headed by <a href='//www.coffeeinstitute.org/certification/people/q-graders'>Arabica Q-Grader</a> and small batch roaster, David Martinez, New Home Coffee has been in operation since 2023. </li>
-                    </ul>
+                <li>What does the host need to provide? </li>
+                <ul>
+                    <li>One dedicated circuit and a crowd!
+                    </li>
+                </ul>
+                </div>
+                <div class="question">
+                <li>Are your beans ethically sourced? 
+                </li>
+                <ul>
+                    <li>Yes, we are committed to sourcing our beans from reputable suppliers who prioritize ethical and sustainable practices. 
+                    </li>
+                </ul>
+                </div>
+                <div class="question">
+                <li>Who roasts your coffee?</li>
+                <ul>
+                    <li>New Home Coffee is our supplier for roasted beans. Headed by <a href='//www.coffeeinstitute.org/certification/people/q-graders'>Arabica Q-Grader</a> and small batch roaster, David Martinez, New Home Coffee has been in operation since 2023. </li>
+                </ul>
+                </div>
+                <div class="question">
+                <li>Can we customize the coffee bar?</li>
+                <ul>
+                    <li>We believe in collaboration, and if customizing the cart is important to you, we want to help your vision come alive. Together, we can see what we can accommodate. 
+                    </li>
+                </ul>
+                </div>
 
-                    <li>Can we customize the coffee bar?</li>
-                    <ul>
-                        <li>We believe in collaboration, and if customizing the cart is important to you, we want to help your vision come alive. Together, we can see what we can accommodate. 
-                        </li>
-                    </ul>
-
+                <div class="question">
                     <li>How much space does the coffee bar take up? </li>
                     <ul>
                         <li>The cart is 5’x2.5’, so about 6’x6’ working space is ideal. 
                         </li>
                     </ul>
+                </div>
 
+                <div class="question">
                     <li>What kind of equipment do you bring to events? 
                     </li>
                     <ul>
                         <li>Our mobile setup includes professional-grade espresso machines, grinders, brewing equipment, and all the necessary tools to create high-quality coffee beverages on-site. We ensure that our equipment is well-maintained and up to industry standards
                         </li>
                     </ul>
-                </ul>
-            </div>
+                </div>
+            </ul>
         </div>
     </div>
 
-        <div>
+        <div> <div class="pop"></div>
             <a class="quoteLink" href="https://forms.gle/Nrc8ihoLmuKH21dY8">Contact Us for Quote</a><br/>
             <a href="//www.instagram.com/animocoffee.la/"><img width="64px" height="64px" src="ii/Instagram_Glyph_White.svg" alt="Instagram"></a>
         </div>
 
     </div>
-    <footer> Copyright 2024 Animo Coffee LLC
-
-
+    <footer>
+        Copyright 2024 Animo Coffee LLC
         <a style='float:right' href="https://www.instagram.com/poetic.science/">Photography by Poetic.Science</a>
     </footer>
+
+    <script>
+
+        const elements =document.querySelectorAll('.question');
+        for(let i = 0; i < elements.length; i++){
+            const elem = elements[i];
+            const ul = elem.querySelector('ul');
+            ul.style.display = 'none';
+            elem.addEventListener('mousedown',function(){
+                ul.style.display = ul.style.display === "none" ? '':'none'; 
+            },false);
+        }
+
+    </script>
 </body>
 </html>
