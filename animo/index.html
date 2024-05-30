@@ -9,6 +9,14 @@
     <link rel="icon" type="image/png" sizes="32x32" href="ii/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="ii/favicon-16x16.png">
     <link rel="manifest" href="manifest.json">
+    <!---
+        Popout Text for FAQ, fix height sizing
+        coffee mug logo
+        animated background of leaves blowing in wind
+        still background of leaves
+        fix height on page
+        talk to enchanted florist 
+    -->
     <style>
 
         :root {
@@ -141,7 +149,7 @@
         nav a{
             width:100%;
             height:50px;
-            line-height:27px;
+            line-height:27px;footer
             vertical-align: middle;
             display:inline-block;
             padding:10px;
@@ -156,6 +164,8 @@
             display:flex;
             justify-content: center;
             margin:250px 50px;
+            max-height:90%;
+            border:solid 1px red;
         }
 
         nav a:hover{
@@ -179,11 +189,7 @@
             width:100vw;
             height:80vh;
             background-color:#000;
-            margin-bottom:75px;
-            overflow:hidden;
-        }
-
-        .background-image{
+            margin-bottom:75px;footer
             width:100%;
             height:100%;
             display:inline-block;
@@ -216,7 +222,7 @@
 
         .image{
             width:100%;
-            height:600px;
+            height:50%;
             margin:5px;
             object-fit: cover;
             object-position:center center;
@@ -225,7 +231,7 @@
         .menu-title-container{
             display:inline-block;
             width:100%;
-            height:600px;
+            height:50%;
             margin:5px;
         }
 
@@ -265,8 +271,10 @@
         footer{
             bottom:0px;
             position:absolute;
-            padding:5px;
+            padding:10px;
+            text-align:left;
             opacity:0.33;
+            width:100%;
         }
        
         @media(orientation:portrait){
@@ -301,14 +309,14 @@
         <nav>
             <div class="nav-wrapper">
                 <a href="#aboutus">About Us</a>
-                <a href="#faq">FAQ</a>
                 <a href="#menu">Menu</a>
+                <a href="#faq">FAQ</a>
                 <a href="https://forms.gle/Nrc8ihoLmuKH21dY8">Quote</a>
             </div>
         </nav>
     </div>
 
-    <div class="menu-container">
+    <div id="aboutus" class="menu-container">
 
         <div>
             <div class="gallery-line">
@@ -318,7 +326,7 @@
         </div>
 
         <div class="side-display">
-            <h3 id="aboutus">About Us</h3>
+            <h3 >About Us</h3>
             <div class="section">
                 In Spanish, Ánimo describes the spirit of inspiration and encouragement. Its purpose is to uplift others and spread joy. From a handcrafted cart, to vendor sourcing, Ánimo Coffee operates with intent as we humbly set out on our path to brick and mortar. All throughout this journey, we believe in the spirit of Ánimo to keep ourselves centered and the community at the forefront.  
             </div>
@@ -326,9 +334,9 @@
 
     </div>
 
-    <div class="menu-container">
+    <div id="menu" class="menu-container">
         <div class="side-display">
-            <h3 id="menu">Menu</h3>
+            <h3 >Menu</h3>
             <div class="section">
                 Our catering menu is curated to offer options ranging from espresso, to lattes, both hot and iced. 
                 <br><br>
@@ -352,13 +360,13 @@
         </div>
     </div>
 
-    <div class="menu-container">
+    <div id="faq" class="menu-container">
         <div class="gallery-line">
             <img class='image' src="i/v2-138.jpg" alt="espresso">
             <img class='image' src="i/v2-111.jpg" alt="pastries">
            </div>
         <div class="side-display">
-            <h3 id="faq">FAQ</h3>
+            <h3 >FAQ</h3>
             <div class="faq-container">
                 <ul> <!--Ordered List -->
                     
@@ -436,6 +444,10 @@
         </div>
 
     </div>
-    <footer> Copyright 2024 Animo</footer>
+    <footer> Copyright 2024 Animo Coffee LLC
+
+
+        <a style='float:right' href="https://www.instagram.com/poetic.science/">Photography by Poetic.Science</a>
+    </footer>
 </body>
 </html>
