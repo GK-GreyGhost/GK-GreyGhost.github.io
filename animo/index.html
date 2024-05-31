@@ -336,12 +336,33 @@
             color:#fff;
         }
 
+        footer{
+            display:flex;
+        }
+
+        footer *{
+            width:100%;
+        }
+
+        footer a{
+            text-align:right;
+        }
+
+        footer div{
+            text-align:left;
+        }
+
+
         @media(orientation:portrait){
 
             *{
                 margin:auto;
                 text-align:center;
                 width:100%;
+            }
+
+            html,body{
+                overflow-x: hidden;
             }
 
             .header-container{
@@ -396,13 +417,8 @@
                 width:100%;
             }
 
-            footer{
-                display:flex;
-            }
 
-            footer *{
-                width:fit-content;
-            }
+
 
 
         }
@@ -592,7 +608,7 @@
 
     </div>
     <footer>
-        Copyright 2024 Animo Coffee LLC
+        <div>Copyright 2024 Animo Coffee LLC</div>
         <a style='float:right' href="https://www.instagram.com/curtright.creative/">Photography by Curtright.Creative</a>
     </footer>
 
