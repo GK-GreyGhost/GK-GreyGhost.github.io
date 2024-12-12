@@ -1,0 +1,1019 @@
+<!doctype HTML>
+<html>
+<head>
+<script src='gerosoup.js'></script>
+<style>
+
+	html{
+		//filter: invert(0.75) sepia(0.5) brightness(0.5) hue-rotate(180deg);
+	}
+	canvas{
+		position:fixed;
+		top:0px;
+		left:0px;
+		right:0px;
+		bottom:0px;
+		margin:auto;
+	}
+</style>
+</head>
+<body>
+<script>
+
+const vp = new Viewport();
+const scene = new Scene(vp);
+const camera = scene.camera;
+const grui = new GRUI(vp);
+const Directions = [
+	new Vector2(-1,0),
+	new Vector2(0,1),
+	new Vector2(1,0),
+	new Vector2(0,-1)
+]
+
+let outputs = {
+	a:0,
+	b:0,
+	c:0,
+	d:0
+}
+
+let tutorial = 0;
+
+reverseGrid = {};
+
+const levelLinks = [
+	"05c106c0126015c116c025c126c035c136c040c041c042c043c045c146c056c0617066c076c080c081c082c083c084c085c086c0",
+	"336051706580",
+	"32a03990656082708980",
+	"01c302c303c304c305c306c307c308c309c30ac30bc30cc311c31cc321c32cc331c3328035703cc341c342c043c044c045c04cc351c352c054605cc361c362c063c064c065c06cc371c3729075a07cc381c38cc391c39cc3a1c3a2c3a3c3a4c3a5c3a6c3a7c3a8c3a9c3aac3abc3acc3",
+	"227033904480526055a0",
+	"227026702a802c805e907e90aea0d160eaa0",
+	"007006c3149016c326c336c346c3516056c366c367c370c372c377c382c387c397c3a080a2c3a6a0a7c3b0c3b1c3b2c3b3c3b4c3b5c3b6c3b7c3",
+];
+
+function gridSet(x,y,v){
+	grid.set(x,y,v);
+	reverseGrid[v] = reverseGrid[v] || [];
+	const pos = new Vector2(x,y);
+	if(v){
+		reverseGrid[v].push(pos);
+	}else{
+		for(p of reverseGrid[v]){
+			if(p.x == pos.x && p.y === pos.y){
+				reverseGrid[v].remove(pos);
+			}
+		}
+	}
+}
+
+let completed = false;
+
+
+let settings = {
+	muted:true,
+	showScore:false
+}
+
+if(localStorage.settings){
+	const json = JSON.parse(localStorage.settings);
+	for(let key in json){
+		settings[key] = json[key];
+	}
+	SFX.muted = settings.muted;
+	tutorial = settings.tutorial || 0;
+}
+
+let lastSpawn = 'd';
+let spawnCursor = 0;
+let spawnOptions = [];
+
+let stats = {
+	apm:0,
+	bpm:0,
+	cpm:0,
+	dpm:0,
+}
+
+SFX.load('a','sfx/a.wav');
+SFX.load('b','sfx/b.wav');
+SFX.load('c','sfx/c.wav');
+SFX.load('d','sfx/d.wav');
+SFX.load('spawn','sfx/spawn.wav')
+SFX.load('gathered','sfx/gather.wav');
+
+//#todo count score
+//	bounding box size (1 points per tile?)
+//  amount of overlaps (4)
+//  amount of sorters (2), pushers (1) and double pushers(3) used3d
+
+//#todo cutout tiles so colors are custom
+const TilePaths = {
+	push:'i/push_up.png',
+	double_push:'i/push_up_double.png',
+	push_a:'i/push_up_a.png',
+	push_b:'i/push_up_b.png',
+	push_c:'i/push_up_c.png',
+	push_d:'i/push_up_d.png',	
+	in:'i/in.png',
+	a:'i/a.png',
+	b:'i/b.png',
+	c:'i/c.png',
+	d:'i/d.png',
+	split:'i/split.png',
+	solid:'i/solid2.png',
+	solid2:'i/solid3.png'
+};
+
+const Colors = {
+	push:'#fff',
+	a:'#f00',
+	b:'#00f',
+	c:'#0f0',
+	d:'#ff0',
+	push_a:'#f00',
+	push_b:'#00f',
+	push_c:'#0f0',
+	push_d:'#ff0'
+}
+
+const RawColors = {
+	push:[255,255,255],
+	push_a:[255,0,0],
+	push_b:[0,0,255],
+	push_c:[0,255,0],
+	push_d:[255,255,0],
+	a:[255,0,0],
+	b:[0,0,255],
+	c:[0,255,0],
+	d:[255,255,0]
+}
+
+let line_dash_offset = 0;
+
+setInterval(function(){
+	line_dash_offset += 0.25;
+	if(line_dash_offset > 1){
+		line_dash_offset = 0;
+	}
+},250);
+
+function array_comp(a,b){
+	if(a.length != b.length){
+		return false;
+	}
+	for(let i = 0; i < a.length; i++){
+		if(a[i] != b[i]){
+			return false;
+		}
+	}
+	return true;
+}
+
+function color_comp(a,b){
+	if(a.length != b.length){
+		return false;
+	}
+	for(let i = 0; i < a.length; i++){
+		if(a[i] < b[i]){
+			return false;
+		}
+	}
+	return true;
+}
+
+const Tiles = {};
+let default_rotation = 0;
+let rotation_steps = TAU / 4;
+let held = false;
+let score = 0;
+let Costs = {
+	push:1,
+	push_a:2,
+	push_b:2,
+	push_c:2,
+	push_d:2,
+	double_push:3
+}
+
+for(let key in TilePaths){
+	Tiles[key] = loadImage(TilePaths[key]);
+}
+
+const grid = new Grid(15,15,16,16);
+
+rebuild_reverse_grid()
+
+grid.update = function(delta){
+
+	let allAboveThreshold = true;
+	for(let key in outputs){
+		if(outputs[key] > 0){
+			if(outputs[key] > 2.5){
+				
+			}else{
+				allAboveThreshold = false
+			}
+			outputs[key] -= delta * 0.33;
+		}else{
+			allAboveThreshold = false;
+		}
+	}
+	if(allAboveThreshold && !completed){
+		alert("SUCCESS!");
+		completed = true;
+	}
+	
+	score = 0;
+
+	score += stats.apm;
+	score += stats.bpm;
+	score += stats.cpm;
+	score += stats.dpm;
+	
+	if(Mouse.left){
+		if(held){
+			const [gx,gy] = grid.toGrid(vp.mouse.x,vp.mouse.y);
+			if(gx < 0 || gy < 0 || gx >= 15 || gy >= 15){
+				held = false;
+				rebuild_url();
+				return;
+			}
+
+			const current = grid.get(gx,gy);
+			if(current){
+				const next = current.value;
+				const nextR = current.r;
+				gridSet(gx,gy,{
+					r:default_rotation,
+					value:held
+				});
+				held = next;
+				default_rotation = nextR;
+			}else{
+				gridSet(gx,gy,{
+					r:default_rotation,
+					value:held
+				});
+				if(!Keys.Shift){
+					held = false
+				}
+				rebuild_url();
+			}
+			Mouse.left = false;
+			 
+			return;
+		}else{
+			const [gx,gy] = grid.toGrid(vp.mouse.x,vp.mouse.y);
+			if(gx < 0 || gy < 0 || gx >= 15 || gy >= 15){
+				return;
+			}
+			const current = grid.get(gx,gy);
+			if(current){
+				held = current.value;
+				default_rotation = current.r;
+				gridSet(gx,gy,false);
+				Mouse.left = false;
+				rebuild_url();
+			}
+		}
+	}
+}
+
+function rebuild_url(){
+	let url = '';
+	const keys = Object.keys(Tiles);
+	for(let x = 0; x < grid.gridWidth; x++){
+		for(let y = 0; y < grid.gridHeight; y++){
+			const d = grid.data[x][y];
+			if(d){
+				const packet = x.toString(16) + y.toString(16) +keys.indexOf(d.value).toString(16)+d.r;
+				url += packet;
+			}
+		}
+	}
+	window.history.replaceState( {} , document.title, "#"+url );
+	rebuild_reverse_grid()
+}
+
+function parse_url(){
+	const data = window.location.hash.substring(1);
+	let packets = [];
+	let buffer = '';
+	for(let c = 0; c < data.length; c++){ //c++....hehe
+		buffer += data[c];
+		if(buffer.length === 4){
+			packets.push(buffer);
+			buffer = '';
+		}
+	}
+
+	if(buffer.length > 0){
+		alert('save data is damaged, attempting to load anyway :) ');
+	}
+
+	// this could be done when I create the packet.... #todo #optimization
+	const keys = Object.keys(Tiles);
+	for(let packet of packets){
+		const x = parseInt(packet[0],16);
+		const y = parseInt(packet[1],16);
+		const index = keys[parseInt(packet[2],16)];
+		const r = parseInt(packet[3],10);
+		const obj = {
+			value:index,
+			r:r
+		}
+		gridSet(x,y,obj);
+	}
+	rebuild_reverse_grid();
+	
+}
+
+function rebuild_reverse_grid(){
+
+	reverseGrid = {};
+
+	for(let x = 0; x < grid.gridWidth; x++){
+		for(let y = 0; y < grid.gridHeight; y++){
+			const v = grid.data[x][y];
+			if(v){
+				reverseGrid[v.value] = reverseGrid[v.value] || [];
+				reverseGrid[v.value].push(new Vector2(x,y));
+			}
+		}
+	}
+	
+	if(tutorial === 1 && reverseGrid.push){
+		tutorial = 2;
+		setTimeout(function(){
+			tutorial = 3;
+			settings.tutorial = 3;
+			localStorage.settings = JSON.stringify(settings);
+		},1000*15);
+	}
+
+	spawnOptions = [];
+	if( reverseGrid.a){
+		spawnOptions.push('a');
+	}
+
+	if( reverseGrid.b){
+		spawnOptions.push('b');
+	}
+
+	if( reverseGrid.c){
+		spawnOptions.push('c');
+	}
+
+	if( reverseGrid.d){
+		spawnOptions.push('d');
+	}
+}
+
+function trace_push(ctx,x,y,dirX,dirY,c){
+	ctx.scale(grid.tileWidth,grid.tileHeight);
+	ctx.lineDashOffset = line_dash_offset;
+	ctx.strokeStyle = '#000';
+	ctx.lineWidth = 0.1;
+	ctx.beginPath();
+	ctx.lineTo(x+0.5,y+0.5);
+	ctx.lineTo(0.5+x+dirX,0.5+y+dirY);
+	ctx.stroke();	
+	ctx.setLineDash([0.25,0.25,0.25]);
+	ctx.strokeStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+	ctx.beginPath();
+	ctx.lineTo(x+0.5,y+0.5);
+	ctx.lineTo(0.5+x+dirX,0.5+y+dirY);
+	ctx.stroke();	
+	ctx.scale(1/grid.tileWidth,1/grid.tileHeight)
+	ctx.setLineDash([]);
+	ctx.lineWidth = 1.0;
+}
+
+function trace_process(ctx,x,y,c,data,depth){
+	if(data.value === 'push' || data.value === 'double_push' || data.value === 'push_a' || data.value === 'push_b' || data.value === 'push_c' || data.value === 'push_d'){
+
+		let range = 4;
+
+		let rx = Math.sin(data.r*rotation_steps);
+		let ry = -Math.cos(data.r*rotation_steps);
+		
+		if(data.value === 'double_push'){
+			range *= 2;
+		}
+
+		const color = RawColors[data.value] || [255,255,255];
+		const c2 = [c[0],c[1],c[2]];
+		c2[0] *= color[0];
+		c2[1] *= color[1];
+		c2[2] *= color[2];
+
+		for(let i = 0; i < c2.length; i++){
+			c2[i] = Math.min(c2[i],255);
+		}
+		
+		if(c2[0] + c2[1] + c2[2] === 0){
+			return 0;
+		}
+
+		if(c[0] !== c2[0] || c[1] !== c2[1] || c[2] !== c2[2]){
+			trace_route(ctx,x+rx,y+ry,[Math.abs(c[0] - c2[0]),Math.abs(c[1] - c2[1]),Math.abs(c[2]-c2[2])],depth+1);	
+		}
+		
+		//trace_push(ctx,x,y,rx*range,ry*range,c);
+
+		while(range > 0){
+			x += rx;
+			y += ry;
+			const hit = grid.get(x,y);
+			if(hit){
+				if(hit.value === 'a' || hit.value === 'b' || hit.value === 'c' || hit.value === 'd'){
+					if(color_comp(c2,RawColors[hit.value])){
+						ctx.lineWidth = 4;
+						ctx.strokeCircle(x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2,48);
+						ctx.lineWidth = 1;
+					}
+				}
+				return 1;
+			}
+			if(trace_route(ctx,x,y,c2,depth+1) > 0){
+				return 1
+			}
+			range -= 1;
+		}
+		return 1;
+	}
+	return
+}
+
+function trace_route(ctx,x,y,c,depth){
+	if(depth > 10){
+		return;
+	}
+	ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+	ctx.fillCircle(x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2,16);
+	ctx.strokeCircle(x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2,16);
+	ctx.fillStyle = '#000';
+	//ctx.fillText(depth,x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2);
+	const up = grid.get(x,y-1);
+	const right = grid.get(x+1,y);
+	const down = grid.get(x,y+1);
+	const left = grid.get(x-1,y);
+	let directions = [grid.get(x,y-1),grid.get(x+1,y),grid.get(x,y+1),grid.get(x-1,y)];
+	let sum = 0;
+	for(let d of directions){
+		if(d){
+			sum += trace_process(ctx,x,y,c,d,depth);
+		}
+	}
+	return sum;
+}
+
+class DeliveryBox{
+	position = new Vector2(0,0)
+	pendingMovement = new Vector2(0,0)
+	type = 'a'
+	active = true
+	ttl = 1
+	lastDirection = -1
+	time = 0
+	constructor(x,y,type){
+		this.position.x = x;
+		this.position.y = y;
+		this.type = type;
+	}
+	render(ctx){
+		ctx.textAlign = 'center';
+
+/*
+		let [x,y] = grid.toGrid(this.position.x,this.position.y);
+
+		x *= grid.tileWidth;
+		y *= grid.tileHeight;
+		x += grid.tileWidth/2
+		y += grid.tileHeight/2;
+		*/
+		ctx.fillStyle = Colors[this.type];
+		if(this.ghost){
+			let [x,y] = grid.toGrid(this.position.x,this.position.y);
+			x *= grid.tileWidth;
+			y *= grid.tileHeight;
+			ctx.fillRect(x,y,grid.tileWidth,grid.tileHeight);
+		}else{
+			const x = this.position.x - 16;
+			const y = this.position.y - 16;
+			ctx.fillStyle = Colors[this.type];
+			ctx.fillRect(x,y,32,32);
+			ctx.strokeStyle = '#000';
+			ctx.strokeRect(x,y,32,32);
+			ctx.fillStyle = '#000';
+			ctx.fillText(this.type,this.position.x,this.position.y);
+		}
+	
+		/*
+		ctx.beginPath();
+		ctx.lineTo(this.position.x,this.position.y);
+		ctx.lineTo(this.position.x+this.pendingMovement.x,this.position.y+this.pendingMovement.y);
+		ctx.stroke();
+		*/
+	}
+	remove(){
+		scene.remove(this);
+		this.active = false;
+	}
+	check_push(gx,gy,ox,oy){
+		const v = grid.get(ox,oy);
+		
+		let n = 4.0;
+		if (v.value === 'push' || v.value === 'split' || v.value === 'double_push' || (v.value === 'push_a' && this.type === 'a') || (v.value === 'push_b' && this.type === 'b') || (v.value === 'push_c' && this.type === 'c') ||  (v.value === 'push_d' && this.type === 'd') ){
+			
+			let r = 0;
+			if(gx < ox){
+				r = 3;
+			}else if(gy > oy){
+				r = 2;
+			}else if(gx > ox){
+				r = 1;
+			}
+
+
+			if(v.value === 'split'){
+				if(this.ghost){
+					return;
+				}
+
+				if((v.r != r )){
+					
+				}else{
+					return;
+				}
+			}else{
+				if(v.r != r ){
+					return;
+				}
+			}
+			
+			if(v.value === 'double_push'){
+				n *= 2;
+			}	
+
+			let rot = v.r;
+
+			if(!this.ghost && this.lastDirection !== v.r){
+				SFX.play(this.type);
+
+				if(v.value === 'split'){
+					v.r = (v.r + 2) % 4;
+				}
+				
+			}
+			this.lastDirection = v.r;
+			this.pendingMovement.x = Math.sin(rot*rotation_steps) * n * grid.tileWidth;
+			this.pendingMovement.y = -Math.cos(rot*rotation_steps) * n * grid.tileHeight;
+			
+			this.ttl = 10;
+			return;
+		}
+	}
+	check_pushes(gx,gy){
+		for(let dir of Directions){
+			const ox = gx+dir.x;
+			const oy = gy+dir.y;
+			this.check_push(gx,gy,ox,oy);
+		}
+	}
+	is_colliding(){
+		const [gx,gy] = grid.toGrid(this.position.x,this.position.y);
+		const v = grid.get(gx,gy);
+		if(v){
+
+			if(v.value === this.type){
+				return false;
+			}
+		
+			if(v.value === 'in'){
+				return false;
+			}
+			return true;
+		}
+		return false;
+	}
+	update(delta){
+		this.time += delta;
+		this.ttl -= delta
+		if(this.ttl <= 0){
+			scene.remove(this);
+			this.active = false;
+			return;
+		}
+		const [gx,gy] = grid.toGrid(this.position.x,this.position.y);
+		const v = grid.get(gx,gy);
+		
+		if(v.value === this.type ){
+			if(!this.ghost){
+				stats[this.type+'pm'] = this.time
+				outputs[this.type] += 1;
+				SFX.play('gathered');
+			}
+			scene.remove(this);
+			this.active = false;
+			return
+		}
+		
+		this.check_pushes(gx,gy);
+
+		if( Math.abs(this.pendingMovement.x) > 0){
+			const s = this.pendingMovement.x * delta;
+			this.position.x += s
+			this.pendingMovement.x -= s;
+			if(this.is_colliding()){
+				this.position.x -= s;
+				this.pendingMovement.x = 0;	
+			}
+		}
+		
+		if( Math.abs(this.pendingMovement.y) > 0){
+			const s = this.pendingMovement.y * delta;
+			this.position.y += s;
+			this.pendingMovement.y -= s;
+			if(this.is_colliding()){
+				this.position.y -= s;
+				this.pendingMovement.y = 0;	
+			}
+		}
+
+
+		if(Math.abs(this.pendingMovement.y) < 0.1){
+			this.position.y += (gy * grid.tileHeight + grid.tileHeight / 2 - this.position.y)  * delta * 10.0;
+		}
+		if(Math.abs(this.pendingMovement.x) < 0.1){
+			this.position.x += (gx * grid.tileWidth + grid.tileWidth / 2 - this.position.x) * delta * 10.0;
+		}
+	}
+}
+
+grid.render = function(ctx){
+
+	for(let x = 0; x < grid.gridWidth; x++){
+		for(let y = 0; y < grid.gridHeight; y++){
+			const d = this.data[x][y];
+			if(d){
+				const ox = x*this.tileWidth+this.tileWidth/2;
+				const oy = y*this.tileHeight+this.tileHeight/2;
+				const r = d.r*rotation_steps;
+				ctx.translate(ox,oy);
+				ctx.rotate(r);
+				ctx.drawImage(Tiles[d.value],-this.tileWidth/2,-this.tileHeight/2,this.tileWidth,this.tileHeight)
+				if(d.value === 'push' || d.value === 'push_a' || d.value === 'push_b' || d.value === 'push_c' || d.value === 'push_d' || d.value === 'double_push'){
+					ctx.fillText('',0,-grid.tileWidth);
+				}
+				ctx.rotate(-r);
+				ctx.translate(-ox,-oy);
+
+				
+				
+			}else{
+				ctx.strokeStyle = '#000';
+				ctx.strokeRect(x*this.tileWidth+4,y*this.tileHeight+4,this.tileWidth-8,this.tileHeight-8);
+			}
+		}
+	}
+
+	/*
+	for(let x = 0; x < grid.gridWidth; x++){
+		for(let y = 0; y < grid.gridHeight; y++){
+			const d = this.data[x][y];
+			if(d){
+				const ox = x*this.tileWidth+this.tileWidth/2;
+				const oy = y*this.tileHeight+this.tileHeight/2;
+				const r = d.r*rotation_steps;
+				if(d.value !== 'in' && d.value !== 'a' && d.value !== 'b' && d.value !== 'c' && d.value !== 'd'){
+					let range = 4;
+					if(d.value === 'double_push'){
+						range *= 2;
+					}
+					ctx.strokeStyle = Colors[d.value] || "#000";
+					ctx.lineWidth = 16;
+					ctx.beginPath();
+					ctx.lineTo(ox,oy);
+					ctx.lineTo(ox+Math.sin(r)*range*grid.tileWidth,oy-Math.cos(r)*range*grid.tileHeight);
+					ctx.stroke();
+					ctx.lineWidth = 1;
+				}
+				
+				if(d.value === 'in'){
+					trace_route(ctx,x,y,[255,255,255],0);
+				}
+			}
+		}
+	}
+	*/
+
+	if(settings.showScore){
+
+		let minX = Infinity;
+		let maxX = -Infinity;
+		let minY = Infinity;
+		let maxY = -Infinity;
+
+		for(let x = 0; x < grid.gridWidth; x++){
+			for(let y = 0; y < grid.gridHeight; y++){
+				const d = grid.data[x][y];
+				if(d && (d.value != 'a' && d.value != 'b' && d.value != 'c' && d.value != 'd' && d.value != 'solid')){
+
+					if(Costs[d.value]){
+						score += Costs[d.value];
+					}
+
+					if(x < minX){
+						minX = x;
+					}
+
+					if(x > maxX){
+						maxX = x;
+					}
+
+					if(y < minY){
+						minY = y;
+					}
+					
+					if(y > maxY){
+						maxY = y;
+					}
+				}
+			}
+		}
+		maxX += 1;
+		maxY += 1;
+		const width = maxX - minX;
+		const height = maxY - minY;
+		
+		if(isFinite(width) && isFinite(height)){
+			score += width * height;
+		}
+
+		const gw = grid.tileWidth;
+		const gh = grid.tileHeight;
+		ctx.strokeStyle = '#aaa';
+		ctx.lineWidth = 4.0;
+		ctx.beginPath();
+		ctx.lineTo(minX*gw,minY*gh);
+		ctx.lineTo(maxX*gw,minY*gh);
+		ctx.lineTo(maxX*gw,maxY*gh);
+		ctx.lineTo(minX*gw,maxY*gh);
+		ctx.lineTo(minX*gw,minY*gh);
+		ctx.stroke();
+		ctx.textAlign = 'right';
+		ctx.lineWidth = 6;
+		ctx.lineCap = "round";
+		ctx.lineJoin = 'round';
+		ctx.strokeStyle = '#000';
+		ctx.strokeText('usage area: +'+width*height,maxX*gw,maxY*gh+32);
+		ctx.fillText('usage area: +'+width*height,maxX*gw,maxY*gh+32);
+		ctx.textAlign = 'center';
+		ctx.lineWidth = 1.0;
+
+	}
+	
+	if(held){
+		//cheaper to store position and rotation? #todo #test
+		ctx.save();
+		const x = vp.mouse.x;
+		const y= vp.mouse.y;
+		const r = default_rotation*rotation_steps;
+		ctx.translate(x,y);
+		ctx.rotate(r);
+		ctx.drawImage(Tiles[held],-40,-40,80,80);
+		ctx.rotate(-r);
+		ctx.translate(-x,-y);
+	}
+
+	ctx.globalAlpha = 0.05;
+	for(let x = 0; x < grid.gridWidth; x++){
+		for(let y = 0; y < grid.gridHeight; y++){
+			if(grid.data[x][y] && grid.data[x][y].value === 'in'){
+				for(let i = 0; i < 4; i++){
+					const box = new DeliveryBox(x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2,spawnOptions[i]);
+					box.ghost = true;
+					let c = 0;
+					while(box.active && c < 1000){
+						c++;
+						//box.update(0.1+Math.random()*0.1 - 0.05);
+						box.update(0.1);
+						box.render(ctx);
+					}
+				}
+			}
+		}
+	}
+	ctx.globalAlpha = 1.0;
+	
+}
+
+grid.renderUI = function(ctx){
+
+	grui.setFontSize(32);
+	grui.x = 32;
+	grui.y = 32;
+
+	grui.offsetDirection.x = 0;
+	grui.offsetDirection.y = 1.0;
+
+	grui.text("Routing Boxes DX is a work in progress")
+	if(settings.showScore){
+		grui.text("Score: "+score.toFixed(2));
+	}
+	grui.x = 36;
+	grui.buttonWidth = 150;
+
+	
+	for(let key of spawnOptions){
+		grui.color1 = Colors[key];
+		grui.progressBar(Math.min(outputs[key]/2.5,1.0));
+	}
+
+	grui.color1 = '#000';
+	grui.x = 32;
+	
+	grui.offsetDirection.x = 1.0;
+	grui.offsetDirection.y = 0;
+
+	for(let key in Tiles){
+		if(grui.buttonImage(Tiles[key],undefined,undefined,64,64,default_rotation*rotation_steps)){
+			held = key;
+			if(tutorial === 0 && held === 'push'){
+				tutorial = 1;
+			}
+		};
+		if(grui.x > 200){
+			grui.x = 32;
+			grui.y += 64 * 1.5;	
+		}
+	}
+	grui.offsetDirection.x = 0;
+	grui.offsetDirection.y = 1.0;
+	/*
+	for(let key in stats){
+		grui.text(key+':'+stats[key].toFixed(2));
+	}
+	*/
+
+	grui.buttonHeight = 32;
+
+	grui.setFontSize(16);
+	
+	if(grui.button(settings.muted?"Unmute":"Mute")){
+		Mouse.left = false;
+		settings.muted = !settings.muted;
+		SFX.muted = settings.muted;
+		localStorage.settings = JSON.stringify(settings);
+	}
+
+	if(tutorial === 3){
+		if(grui.button("Restart Tutorial")){
+			delete settings.tutorial;
+			localStorage.settings = JSON.stringify(settings);
+			window.location.reload();
+			Mouse.left = false;
+		}
+	}else{
+		if(grui.button('Skip Tutorial')){
+			settings.tutorial = 3;
+			localStorage.settings = JSON.stringify(settings);
+			window.location.reload();
+			Mouse.left = false;
+		}
+	}
+
+	if(grui.button('toggle score ui')){
+		settings.showScore = !settings.showScore;
+		localStorage.settings = JSON.stringify(settings);
+		Mouse.left = false;
+	}
+
+	
+	if(tutorial > -1){
+		ctx.lineWidth = 3;
+		ctx.strokeStyle = '#000';
+		ctx.fillStyle = '#fff';
+		if(tutorial === 0){
+			const end = new Vector2(64,304);
+			ctx.strokeCircle(Mouse.position.x,Mouse.position.y,32);
+			ctx.strokeCircle(end.x,end.y,32);
+			const dir = Mouse.position.directionTo(end)
+			const distance = Mouse.position.distanceTo(end);
+			ctx.strokeText("click to pick up an arrow, place to push a box",Mouse.position.x+dir.x*distance/2,Mouse.position.y +dir.y*distance/2-32);
+			ctx.fillText("click to pick up an arrow, place to push a box",Mouse.position.x+dir.x*distance/2,Mouse.position.y +dir.y*distance/2-32);
+			ctx.beginPath();
+			ctx.lineTo(Mouse.position.x+dir.x*32,Mouse.position.y+dir.y*32);
+			ctx.lineTo(end.x,end.y);
+			ctx.stroke();
+		}else if(tutorial === 1){
+			ctx.strokeCircle(Mouse.position.x,Mouse.position.y,32);
+			const box = [25,270,64,64];
+			const input = reverseGrid.in[0];
+			const end = new Vector2(input.x*grid.tileWidth+grid.tileWidth/2-camera.position.x,input.y*grid.tileHeight+grid.tileHeight/2-camera.position.y+grid.tileHeight);
+			const dir = Mouse.position.directionTo(end)
+			const distance = Mouse.position.distanceTo(end);
+			ctx.strokeText("place next to (not on!) a delivery box input to push it, q/e to rotate",Mouse.position.x+dir.x*distance/2,Mouse.position.y +dir.y*distance/2-32);
+			ctx.fillText("place next to (not on!) a delivery box input to push it, q/e to rotate",Mouse.position.x+dir.x*distance/2,Mouse.position.y +dir.y*distance/2-32);
+			ctx.beginPath();
+			ctx.lineTo(Mouse.position.x+dir.x*32,Mouse.position.y+dir.y*32);
+			ctx.lineTo(end.x,end.y);
+			ctx.stroke();
+		}else if(tutorial === 2){
+			const end = new Vector2(32+154,96);
+			ctx.strokeCircle(Mouse.position.x,Mouse.position.y,32);
+			const dir = Mouse.position.directionTo(end)
+			const distance = Mouse.position.distanceTo(end);
+			ctx.strokeText("the bar fills up as you deliver packages, you win when it fills up, good luck!",Mouse.position.x+dir.x*distance/2,Mouse.position.y +dir.y*distance/2-32);
+			ctx.fillText("the bar fills up as you deliver packages, you win when it fills up, good luck!",Mouse.position.x+dir.x*distance/2,Mouse.position.y +dir.y*distance/2-32);
+			ctx.beginPath();
+			ctx.lineTo(Mouse.position.x+dir.x*32,Mouse.position.y+dir.y*32);
+			ctx.lineTo(end.x,end.y);
+			ctx.stroke();
+		}
+		ctx.lineWidth = 1;
+	}
+
+	grui.x = 16;
+	grui.y = vp.height - grui.buttonHeight*2.5;
+	
+	grui.textBG("Level Select");
+		
+	grui.offsetDirection.x = 1.0;
+	grui.offsetDirection.y = 0;
+
+	grui.buttonWidth = grui.buttonHeight;
+		
+	for(let i = 0; i < levelLinks.length; i++){
+		if(grui.button(i)){
+			window.location.hash = levelLinks[i];
+			window.location.reload();
+		}
+	}
+	
+}
+
+window.addEventListener('resize',recalc,false);
+
+function recalc(){
+	const padding = 200;
+	const size = Math.round(Math.min((window.innerWidth - padding) / 15, (window.innerHeight - padding) / 15));
+	grid.tileWidth = size;
+	grid.tileHeight = size;
+	camera.position.x = -window.innerWidth / 2 + (size * 15) / 2;
+	camera.position.y = -window.innerHeight / 2 + (size * 15) / 2;
+	camera.position.x -= 100;
+}
+
+window.addEventListener('keydown',function(e){
+	if(e.code === 'KeyQ'){
+		default_rotation -= 1;
+		if(default_rotation < 0){
+			default_rotation = 3;
+		}
+	}else if(e.code === 'KeyE'){
+		default_rotation += 1;
+		if(default_rotation >= 4){
+			default_rotation = 0;
+		}
+	}
+},false);
+
+recalc();
+
+scene.add(grid);
+
+if(window.location.hash){
+	parse_url();
+}
+
+scene.start();
+
+setInterval(function(){
+
+	for(let x = 0; x < grid.gridWidth; x++){
+		for(let y = 0; y < grid.gridHeight; y++){
+			if(grid.data[x][y] && grid.data[x][y].value === 'in'){
+				if(spawnOptions[spawnCursor]){
+					const box = new DeliveryBox(x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2,spawnOptions[spawnCursor]);
+					SFX.play('spawn');
+					scene.add(box);
+				}
+			}
+		}
+	}
+
+	spawnCursor += 1;
+	if(spawnCursor > spawnOptions.length-1){
+		spawnCursor = 0;
+	}
+	
+	
+},500);
+
+
+</script>
+</body>
+</html>
