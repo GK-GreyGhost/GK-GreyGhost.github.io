@@ -207,7 +207,7 @@ rebuild_reverse_grid()
 grid.update = function(delta){
 
 	let allAboveThreshold = true;
-	for(let key in outputs){
+	for(let key of spawnOptions){
 		if(outputs[key] > 0){
 			if(outputs[key] > 2.5){
 				
@@ -792,7 +792,7 @@ grid.render = function(ctx){
 	for(let x = 0; x < grid.gridWidth; x++){
 		for(let y = 0; y < grid.gridHeight; y++){
 			if(grid.data[x][y] && grid.data[x][y].value === 'in'){
-				for(let i = 0; i < 4; i++){
+				for(let i = 0; i < spawnOptions.length; i++){
 					const box = new DeliveryBox(x*grid.tileWidth+grid.tileWidth/2,y*grid.tileHeight+grid.tileHeight/2,spawnOptions[i]);
 					box.ghost = true;
 					let c = 0;
