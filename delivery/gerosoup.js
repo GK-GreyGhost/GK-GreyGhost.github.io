@@ -1001,6 +1001,33 @@ class GRUI{
 		this.y += h * this.offsetDirection.y * this.spacing;
 		return Mouse.left && inside;
 	}
+    buttonInvert(text,nx=this.x,ny=this.y){
+        const ctx = this.viewport.ctx;
+        this.x = nx;
+        this.y = ny;
+        let inside = false;
+        if(isPointInsideRect(Mouse.position.x,Mouse.position.y,this.x,this.y,this.buttonWidth,this.buttonHeight)){
+            ctx.fillStyle = this.color2;
+            ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
+            ctx.fillStyle = this.color1;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y+this.buttonHeight*0.5);
+            inside = true;
+        }else{
+            ctx.fillStyle = this.color1;
+            ctx.fillRect(this.x,this.y,this.buttonWidth,this.buttonHeight);
+            ctx.strokeStyle = this.color2;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.strokeRect(this.x+0.5,this.y+0.5,this.buttonWidth,this.buttonHeight);
+			ctx.fillStyle = this.color2;
+            ctx.fillText(text,this.x+this.buttonWidth*0.5,this.y+this.buttonHeight*0.5)
+        }
+        this.y += this.buttonHeight * this.offsetDirection.y * this.spacing;
+        this.x += this.buttonWidth * this.offsetDirection.x * this.spacing;
+        return Mouse.left && inside;
+    }
     button(text,nx=this.x,ny=this.y){
         const ctx = this.viewport.ctx;
         this.x = nx;

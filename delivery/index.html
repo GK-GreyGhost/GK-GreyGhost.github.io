@@ -31,6 +31,8 @@ const Directions = [
 	new Vector2(0,-1)
 ]
 
+let editorMode = false;
+
 let outputs = {
 	a:0,
 	b:0,
@@ -39,8 +41,10 @@ let outputs = {
 }
 
 let tutorial = 0;
-
 reverseGrid = {};
+let currentLevel = 0;
+
+let editorBlocks = ['a','b','c','d','solid','solid2','in'];
 
 const levelLinks = [
 	"05c106c0126015c116c025c126c035c136c040c041c042c043c045c146c056c0617066c076c080c081c082c083c084c085c086c0",
@@ -50,6 +54,8 @@ const levelLinks = [
 	"227033904480526055a0",
 	"227026702a802c805e907e90aea0d160eaa0",
 	"007006c3149016c326c336c346c3516056c366c367c370c372c377c382c387c397c3a080a2c3a6a0a7c3b0c3b1c3b2c3b3c3b4c3b5c3b6c3b7c3",
+	"0ba01d60387048804e90",
+	"1d6022704270a270c270d970db70"
 ];
 
 function gridSet(x,y,v){
@@ -68,7 +74,7 @@ function gridSet(x,y,v){
 }
 
 let completed = false;
-
+let completeModal = false;
 
 let settings = {
 	muted:true,
@@ -180,8 +186,8 @@ function color_comp(a,b){
 		}
 	}
 	return true;
-}
-
+}                
+                                              
 const Tiles = {};
 let default_rotation = 0;
 let rotation_steps = TAU / 4;
@@ -193,7 +199,7 @@ let Costs = {
 	push_b:2,
 	push_c:2,
 	push_d:2,
-	double_push:3
+	double_push:8
 }
 
 for(let key in TilePaths){
@@ -206,6 +212,8 @@ rebuild_reverse_grid()
 
 grid.update = function(delta){
 
+	delta = Math.min(delta,1);
+	
 	if(spawnOptions.length > 0){
 		let allAboveThreshold = true;
 		for(let key of spawnOptions){
@@ -221,7 +229,7 @@ grid.update = function(delta){
 			}
 		}
 		if(allAboveThreshold && !completed){
-			alert("SUCCESS!");
+			completeModal = true;
 			completed = true;
 		}
 	}
@@ -498,18 +506,13 @@ class DeliveryBox{
 		ctx.fillStyle = Colors[this.type];
 		if(this.ghost){
 			let [x,y] = grid.toGrid(this.position.x,this.position.y);
+			const padding = 32;
+			const half = padding / 2;
 			x *= grid.tileWidth;
 			y *= grid.tileHeight;
-			ctx.fillRect(x,y,grid.tileWidth,grid.tileHeight);
+			ctx.fillRect(x+half,y+half,grid.tileWidth-padding,grid.tileHeight-padding);
 		}else{
-			const x = this.position.x - 16;
-			const y = this.position.y - 16;
-			ctx.fillStyle = Colors[this.type];
-			ctx.fillRect(x,y,32,32);
-			ctx.strokeStyle = '#000';
-			ctx.strokeRect(x,y,32,32);
-			ctx.fillStyle = '#000';
-			ctx.fillText(this.type,this.position.x,this.position.y);
+			ctx.drawImage(Tiles[this.type],this.position.x-16,this.position.y-16,32,32);
 		}
 	
 		/*
@@ -601,6 +604,7 @@ class DeliveryBox{
 		return false;
 	}
 	update(delta){
+		delta = Math.min(delta,1);
 		this.time += delta;
 		this.ttl -= delta
 		if(this.ttl <= 0){
@@ -816,6 +820,34 @@ grid.render = function(ctx){
 
 grid.renderUI = function(ctx){
 
+	if(completeModal){
+		const w = 440;
+		const h = 200;
+		grui.offsetDirection.x = 0;
+		grui.offsetDirection.y = 1;
+		ctx.fillStyle = '#fff';
+		ctx.strokeStyle = '#000';
+		ctx.strokeRect(window.innerWidth/2-w/2,window.innerHeight/2-h/2,w,h);
+		ctx.fillRect(window.innerWidth/2-w/2,window.innerHeight/2-h/2,w,h);
+		grui.x = window.innerWidth/2-w/2;
+		grui.y = window.innerHeight/2-h/2 + 64;
+		grui.buttonWidth = w-20;
+		grui.x += 10;
+		grui.y -= grui.buttonHeight;
+		grui.textBG("LEVEL COMPLETE!");
+		if(levelLinks[currentLevel+1]){
+			if(grui.button('Next Level')){
+				window.location.hash = levelLinks[currentLevel+1];
+				window.location.reload();
+				Mouse.left = false;
+			}	
+		}
+		if(grui.button('close')){
+			completeModal = false;
+			Mouse.left = false;
+		}
+	}
+
 	grui.setFontSize(32);
 	grui.x = 32;
 	grui.y = 32;
@@ -842,17 +874,36 @@ grid.renderUI = function(ctx){
 	grui.offsetDirection.x = 1.0;
 	grui.offsetDirection.y = 0;
 
-	for(let key in Tiles){
-		if(grui.buttonImage(Tiles[key],undefined,undefined,64,64,default_rotation*rotation_steps)){
-			held = key;
-			if(tutorial === 0 && held === 'push'){
-				tutorial = 1;
+	if(editorMode){
+		for(let key in Tiles){
+			if(grui.buttonImage(Tiles[key],undefined,undefined,64,64,default_rotation*rotation_steps)){
+				held = key;
+				if(tutorial === 0 && held === 'push'){
+					tutorial = 1;
+				}
+			};
+			if(grui.x > 200){
+				grui.x = 32;
+				grui.y += 64 * 1.5;	
 			}
-		};
-		if(grui.x > 200){
-			grui.x = 32;
-			grui.y += 64 * 1.5;	
 		}
+	}else{
+		for(let key in Tiles){
+			if(!editorBlocks.includes(key)){
+				if(grui.buttonImage(Tiles[key],undefined,undefined,64,64,default_rotation*rotation_steps)){
+					held = key;
+					if(tutorial === 0 && held === 'push'){
+						tutorial = 1;
+					}
+				};
+				if(grui.x > 200){
+					grui.x = 32;
+					grui.y += 64 * 1.5;	
+				}
+			}
+		}
+		grui.x = 32;
+		grui.y += 64 * 1.5;
 	}
 	grui.offsetDirection.x = 0;
 	grui.offsetDirection.y = 1.0;
@@ -861,6 +912,7 @@ grid.renderUI = function(ctx){
 		grui.text(key+':'+stats[key].toFixed(2));
 	}
 	*/
+
 
 	grui.buttonHeight = 32;
 
@@ -892,6 +944,11 @@ grid.renderUI = function(ctx){
 	if(grui.button('toggle score ui')){
 		settings.showScore = !settings.showScore;
 		localStorage.settings = JSON.stringify(settings);
+		Mouse.left = false;
+	}
+
+	if(grui.button(editorMode?'disable editor mode':'enable editor mode')){
+		editorMode = !editorMode;
 		Mouse.left = false;
 	}
 
@@ -951,11 +1008,19 @@ grid.renderUI = function(ctx){
 	grui.buttonWidth = grui.buttonHeight;
 		
 	for(let i = 0; i < levelLinks.length; i++){
-		if(grui.button(i)){
-			window.location.hash = levelLinks[i];
-			window.location.reload();
+		if(i === currentLevel){
+			if(grui.buttonInvert(i)){
+				window.location.hash = levelLinks[i];
+				window.location.reload();
+			}
+		}else{
+			if(grui.button(i)){
+				window.location.hash = levelLinks[i];
+				window.location.reload();
+			}
 		}
 	}
+
 	
 }
 
@@ -968,7 +1033,9 @@ function recalc(){
 	grid.tileHeight = size;
 	camera.position.x = -window.innerWidth / 2 + (size * 15) / 2;
 	camera.position.y = -window.innerHeight / 2 + (size * 15) / 2;
-	camera.position.x -= 100;
+	if(window.innerWidth > window.innerHeight){
+		camera.position.x -= 100;
+	}
 }
 
 window.addEventListener('keydown',function(e){
@@ -990,7 +1057,13 @@ recalc();
 scene.add(grid);
 
 if(window.location.hash){
+	const w = window.location.hash.substr(1);
+	const i = levelLinks.indexOf(w);
+	currentLevel = i;
 	parse_url();
+	console.log(currentLevel);
+}else{
+	window.location.hash = levelLinks[currentLevel];
 }
 
 scene.start();
