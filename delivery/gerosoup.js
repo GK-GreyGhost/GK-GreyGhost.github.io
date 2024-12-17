@@ -43,6 +43,7 @@ window.addEventListener('contextmenu',function(e){
 })
 
 const __cachedImages = {};
+let Touched = false;
 
 const dummyImageSource = createDummyImage();
 
@@ -273,6 +274,26 @@ const Keys = {};
 
 const MouseButtons = ['left','middle','right'];
 
+const Touch = [];
+
+window.addEventListener('touchstart',function(e){
+	Touched = true
+	Mouse.left = true;
+	Mouse.position.x = e.touches[0].clientX;
+	Mouse.position.y = e.touches[0].clientY;
+},false);
+
+window.addEventListener('touchend',function(e){
+	if(e.touches.length === 0){
+		Mouse.left = false;
+	}
+},false);
+
+window.addEventListener('touchmove',function(e){
+	Mouse.position.x = e.touches[0].clientX;
+	Mouse.position.y = e.touches[0].clientY;
+},false);
+
 window.addEventListener('keydown',function(e){
     if (!Keys[e.key]){
         Signals.emit('keydown',e.key);
@@ -388,7 +409,51 @@ function Viewport(width,height){
         //this.mouse.y /= this.scene.camera.scale.y;
         //this.mouse.x += this.canvas.offsetLeft / this.scene.camera.scale.x;
         //this.mouse.y += this.canvas.offsetTop;
-    })
+    });
+
+      this.canvas.addEventListener('touchstart',(e) => {
+      	Touched = true
+       	this.mouse.left = true;
+       	e = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        const c = this.scene.camera
+
+        this.mouse.x = (e.clientX - rect.left) * scaleX  + c.position.x;
+        this.mouse.y = (e.clientY - rect.top) * scaleY  + c.position.y;
+        this.mouse.x /= c.scale.x;
+        this.mouse.y /= c.scale.y;
+
+    },false);
+
+
+    this.canvas.addEventListener('touchend',(e) => {
+		if(e.touches.length === 0){
+			this.mouse.left = false;
+		}
+	});
+    
+    this.canvas.addEventListener('touchmove',(e) => {
+
+		e = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        const c = this.scene.camera
+
+        this.mouse.x = (e.clientX - rect.left) * scaleX  + c.position.x;
+        this.mouse.y = (e.clientY - rect.top) * scaleY  + c.position.y;
+        this.mouse.x /= c.scale.x;
+        this.mouse.y /= c.scale.y;
+
+        //this.mouse.x /= this.scene.camera.scale.x;
+        //this.mouse.y /= this.scene.camera.scale.y;
+        //this.mouse.x += this.canvas.offsetLeft / this.scene.camera.scale.x;
+        //this.mouse.y += this.canvas.offsetTop;
+    });
 }
 
 Viewport.prototype.render = function(ctx){

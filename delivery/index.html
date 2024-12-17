@@ -2,6 +2,7 @@
 <html>
 <head>
 <script src='gerosoup.js'></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <style>
 
 	html{
@@ -39,6 +40,8 @@ let outputs = {
 	c:0,
 	d:0
 }
+
+let lastPosition = new Vector2(-1,-1);
 
 let tutorial = 0;
 reverseGrid = {};
@@ -212,6 +215,7 @@ rebuild_reverse_grid()
 
 grid.update = function(delta){
 
+
 	delta = Math.min(delta,1);
 	
 	if(spawnOptions.length > 0){
@@ -240,16 +244,17 @@ grid.update = function(delta){
 	score += stats.bpm;
 	score += stats.cpm;
 	score += stats.dpm;
-	
-	if(Mouse.left){
-		if(held){
+
+
+	if(Touched){
+		// TOUCH SCREEN CONTROLS
+		if(held && Mouse.left === false){
 			const [gx,gy] = grid.toGrid(vp.mouse.x,vp.mouse.y);
 			if(gx < 0 || gy < 0 || gx >= 15 || gy >= 15){
 				held = false;
 				rebuild_url();
 				return;
 			}
-
 			const current = grid.get(gx,gy);
 			if(current){
 				const next = current.value;
@@ -258,33 +263,85 @@ grid.update = function(delta){
 					r:default_rotation,
 					value:held
 				});
-				held = next;
+				lastPosition.x = gx;
+				lastPosition.y = gy;
+				held = false
 				default_rotation = nextR;
 			}else{
 				gridSet(gx,gy,{
 					r:default_rotation,
 					value:held
 				});
+				lastPosition.x = gx;
+				lastPosition.y = gy;
 				if(!Keys.Shift){
 					held = false
 				}
 				rebuild_url();
 			}
-			Mouse.left = false;
-			 
-			return;
-		}else{
+		}else if(!held && Mouse.left){
 			const [gx,gy] = grid.toGrid(vp.mouse.x,vp.mouse.y);
 			if(gx < 0 || gy < 0 || gx >= 15 || gy >= 15){
-				return;
+				return
 			}
 			const current = grid.get(gx,gy);
 			if(current){
-				held = current.value;
-				default_rotation = current.r;
+				const next = current.value;
+				const nextR = current.r;
 				gridSet(gx,gy,false);
-				Mouse.left = false;
+				held = next;
+				default_rotation = nextR;
 				rebuild_url();
+			}
+			
+		}
+		return;
+	}else{
+		// MOUSE CONTROLS
+		if(Mouse.left){
+			if(held){
+				const [gx,gy] = grid.toGrid(vp.mouse.x,vp.mouse.y);
+				if(gx < 0 || gy < 0 || gx >= 15 || gy >= 15){
+					held = false;
+					rebuild_url();
+					return;
+				}
+
+				const current = grid.get(gx,gy);
+				if(current){
+					const next = current.value;
+					const nextR = current.r;
+					gridSet(gx,gy,{
+						r:default_rotation,
+						value:held
+					});
+					held = next;
+					default_rotation = nextR;
+				}else{
+					gridSet(gx,gy,{
+						r:default_rotation,
+						value:held
+					});
+					if(!Keys.Shift){
+						held = false
+					}
+					rebuild_url();
+				}
+				Mouse.left = false;
+				return;
+			}else{
+				const [gx,gy] = grid.toGrid(vp.mouse.x,vp.mouse.y);
+				if(gx < 0 || gy < 0 || gx >= 15 || gy >= 15){
+					return;
+				}
+				const current = grid.get(gx,gy);
+				if(current){
+					held = current.value;
+					default_rotation = current.r;
+					gridSet(gx,gy,false);
+					Mouse.left = false;
+					rebuild_url();
+				}
 			}
 		}
 	}
@@ -479,6 +536,108 @@ function trace_route(ctx,x,y,c,depth){
 	return sum;
 }
 
+class PushEffect{
+	time = 0
+	position = new Vector2(0,0)
+	render(ctx){
+			if(this.time > 0.5){
+				return;
+			}
+			ctx.globalAlpha = 0.5;
+			const offset = 64;
+			ctx.fillStyle = `#aaa`;
+			ctx.fillCircle(this.position.x,this.position.y,32);
+			for(let i = 0; i < 10; i++){
+				const a = ['7','d'][Math.floor(Math.random()*2)];
+				ctx.fillStyle = `#`+a+a+a;
+				ctx.fillCircle(
+					this.position.x+Math.random()*offset-offset/2,
+					this.position.y+Math.random()*offset-offset/2,
+					Math.random()*8+4);
+			}
+			ctx.globalAlpha = 1.0;
+	}
+	update(delta){
+		if(this.time > 0.5){
+			return;
+		}
+		this.time += delta;
+	}
+	constructor(x,y){
+		Groups.add('pushEffect',this);
+		this.position.x = x;
+		this.position.y = y;
+	}
+	static add(x,y){
+		x = Math.floor(x/grid.tileWidth) * grid.tileWidth + grid.tileWidth/2;
+		y = Math.floor(y/grid.tileHeight) * grid.tileHeight + grid.tileHeight/2; 
+		if(Groups.groups.pushEffect){
+			for(let item of Groups.groups.pushEffect){
+				if(item.time >= 0.5){
+					item.time = 0;
+					
+					item.position.x = x;
+					item.position.y = y;
+					scene.add(item);
+					return;
+				}
+			}
+		}
+		const n = new PushEffect(x,y);
+		scene.add(n);
+	}
+}
+
+class PointEffect{
+	time = 0
+	position = new Vector2(0,0)
+	render(ctx){
+			if(this.time > 1.0){
+				return;
+			}
+			ctx.globalAlpha = 0.5;
+			const offset = 64;
+			ctx.fillStyle = `#aaa`;
+			ctx.fillCircle(this.position.x,this.position.y,32);
+			for(let i = 0; i < 10; i++){
+				const a = ['7','d'][Math.floor(Math.random()*2)];
+				ctx.fillStyle = `#`+a+a+a;
+				ctx.fillCircle(
+					this.position.x+Math.random()*offset-offset/2,
+					this.position.y+Math.random()*offset-offset/2,
+					Math.random()*8+4);
+			}
+			ctx.globalAlpha = 1.0;
+	}
+	update(delta){
+		if(this.time > 1.0){
+			return;
+		}
+		this.time += delta;
+	}
+	constructor(x,y){
+		Groups.add('pointEffect',this);
+		this.position.x = x;
+		this.position.y = y;
+	}
+	static add(x,y){
+		x = Math.floor(x/grid.tileWidth) * grid.tileWidth + grid.tileWidth/2;
+		y = Math.floor(y/grid.tileHeight) * grid.tileHeight + grid.tileHeight/2; 
+		if(Groups.groups.pointEffect){
+			for(let item of Groups.groups.pointEffect){
+				if(item.time >= 0.5){
+					item.time = 0;
+					item.position.x = x;
+					item.position.y = y;
+					return;
+				}
+			}
+		}
+		const n = new PushEffect(x,y);
+		scene.add(n);
+	}
+}
+
 class DeliveryBox{
 	position = new Vector2(0,0)
 	pendingMovement = new Vector2(0,0)
@@ -493,6 +652,20 @@ class DeliveryBox{
 		this.type = type;
 	}
 	render(ctx){
+
+		/*
+		if(!this.ghost && this.time < 0.25){
+			const offset = 64;
+			for(let i = 0; i < 10; i++){
+				const a = ['7','d'][Math.floor(Math.random()*2)];
+				ctx.fillStyle = `#`+a+a+a;
+				ctx.fillCircle(
+					this.position.x+Math.random()*offset-offset/2,
+					this.position.y+Math.random()*offset-offset/2,
+					Math.random()*8+4);
+			}
+		}
+		*/
 		ctx.textAlign = 'center';
 
 /*
@@ -566,7 +739,7 @@ class DeliveryBox{
 
 			if(!this.ghost && this.lastDirection !== v.r){
 				SFX.play(this.type);
-
+				PushEffect.add(this.position.x,this.position.y);
 				if(v.value === 'split'){
 					v.r = (v.r + 2) % 4;
 				}
@@ -816,6 +989,17 @@ grid.render = function(ctx){
 		}
 		ctx.globalAlpha = 1.0;
 	}
+
+	if(lastPosition.x !== -1){
+		ctx.lineWidth = 3;
+		let offset = Math.sin(Date.now()) * 4.0;
+		ctx.strokeRect(
+			lastPosition.x*grid.tileWidth,
+			lastPosition.y*grid.tileHeight,
+			grid.tileWidth,grid.tileHeight
+		);
+		ctx.lineWidth = 1;
+	}
 }
 
 grid.renderUI = function(ctx){
@@ -882,9 +1066,11 @@ grid.renderUI = function(ctx){
 					tutorial = 1;
 				}
 			};
-			if(grui.x > 200){
-				grui.x = 32;
-				grui.y += 64 * 1.5;	
+			if(vp.width > vp.height){
+				if(grui.x > 200){
+					grui.x = 32;
+					grui.y += 64 * 1.5;	
+				}
 			}
 		}
 	}else{
@@ -896,17 +1082,21 @@ grid.renderUI = function(ctx){
 						tutorial = 1;
 					}
 				};
-				if(grui.x > 200){
-					grui.x = 32;
-					grui.y += 64 * 1.5;	
+				if(vp.width > vp.height){
+					if(grui.x > 200){
+						grui.x = 32;
+						grui.y += 64 * 1.5;	
+					}
 				}
 			}
 		}
 		grui.x = 32;
 		grui.y += 64 * 1.5;
 	}
-	grui.offsetDirection.x = 0;
-	grui.offsetDirection.y = 1.0;
+	if(vp.width > vp.height){
+		grui.offsetDirection.x = 0;
+		grui.offsetDirection.y = 1.0;
+	}
 	/*
 	for(let key in stats){
 		grui.text(key+':'+stats[key].toFixed(2));
@@ -1021,6 +1211,31 @@ grid.renderUI = function(ctx){
 		}
 	}
 
+	grui.buttonWidth = grid.tileWidth*grid.gridWidth / 2.0;
+	grui.spacing = 1;
+	grui.x = vp.width / 2 - grid.tileWidth*grid.gridWidth/2.0 + 0.5;
+	grui.y = vp.height / 2 + grid.tileHeight*grid.gridHeight / 2 + 0.5;
+
+	if(grui.button("rotate left")){
+		Mouse.left = false;
+		const u = grid.get(lastPosition.x,lastPosition.y);
+		if(u){
+			u.r += -1;
+			if(u.r < 0){
+				u.r = 3;
+			}
+		}
+	};
+	if(grui.button("rotate right")){
+		Mouse.left = false;
+		const u = grid.get(lastPosition.x,lastPosition.y);
+		if(u){
+			u.r += 1;
+			if(u.r > 3){
+				u.r = 0;
+			}
+		}
+	};
 	
 }
 
