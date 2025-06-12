@@ -8,6 +8,9 @@
 	html{
 		//filter: invert(0.75) sepia(0.5) brightness(0.5) hue-rotate(180deg);
 	}
+	body{
+		background:#82a66b;
+	}
 	canvas{
 		position:fixed;
 		top:0px;
@@ -20,6 +23,8 @@
 </head>
 <body>
 <script>
+
+const animalMode = true;
 
 const vp = new Viewport();
 const scene = new Scene(vp);
@@ -123,7 +128,7 @@ const TilePaths = {
 	push_a:'i/push_up_a.png',
 	push_b:'i/push_up_b.png',
 	push_c:'i/push_up_c.png',
-	push_d:'i/push_up_d.png',	
+	push_d:'i/push_up_d.png',
 	in:'i/in.png',
 	a:'i/a.png',
 	b:'i/b.png',
@@ -131,7 +136,9 @@ const TilePaths = {
 	d:'i/d.png',
 	split:'i/split.png',
 	solid:'i/solid2.png',
-	solid2:'i/solid3.png'
+	solid2:'i/solid3.png',
+	empty:'i/empty.png',
+	a_out:'i/a_out.png',
 };
 
 const Colors = {
@@ -685,7 +692,20 @@ class DeliveryBox{
 			y *= grid.tileHeight;
 			ctx.fillRect(x+half,y+half,grid.tileWidth-padding,grid.tileHeight-padding);
 		}else{
-			ctx.drawImage(Tiles[this.type],this.position.x-16,this.position.y-16,32,32);
+			const ox = this.position.x;
+			const oy = this.position.y;
+			const r = Math.sin(Date.now()/50) * 0.1;
+			ctx.translate(ox,oy);
+			ctx.rotate(r);
+			if(this.pendingMovement.x > 0){
+				ctx.scale(-1,1);
+				ctx.drawImage(Tiles[this.type],-grid.tileWidth/2,-grid.tileHeight/2,grid.tileWidth,grid.tileHeight)
+				ctx.scale(-1,1);				
+			}else{
+				ctx.drawImage(Tiles[this.type],-grid.tileWidth/2,-grid.tileHeight/2,grid.tileWidth,grid.tileHeight)
+			}
+			ctx.rotate(-r);
+			ctx.translate(-ox,-oy);
 		}
 	
 		/*
@@ -844,16 +864,16 @@ grid.render = function(ctx){
 				ctx.rotate(r);
 				ctx.drawImage(Tiles[d.value],-this.tileWidth/2,-this.tileHeight/2,this.tileWidth,this.tileHeight)
 				if(d.value === 'push' || d.value === 'push_a' || d.value === 'push_b' || d.value === 'push_c' || d.value === 'push_d' || d.value === 'double_push'){
-					ctx.fillText('',0,-grid.tileWidth);
+					ctx.fillText('✕',0,-grid.tileWidth);
 				}
 				ctx.rotate(-r);
 				ctx.translate(-ox,-oy);
-
-				
-				
 			}else{
 				ctx.strokeStyle = '#000';
-				ctx.strokeRect(x*this.tileWidth+4,y*this.tileHeight+4,this.tileWidth-8,this.tileHeight-8);
+				ctx.drawImage(Tiles.empty,x*this.tileWidth,y*this.tileHeight,this.tileWidth,this.tileHeight)
+				if(held){
+					ctx.strokeRect(x*this.tileWidth+4,y*this.tileHeight+4,this.tileWidth-8,this.tileHeight-8);
+				}
 			}
 		}
 	}
@@ -960,7 +980,7 @@ grid.render = function(ctx){
 		ctx.save();
 		const x = vp.mouse.x;
 		const y= vp.mouse.y;
-		const r = default_rotation*rotation_steps;
+		const r = default_rotation*rotation_steps+Math.sin(Date.now()/100)*0.25;
 		ctx.translate(x,y);
 		ctx.rotate(r);
 		ctx.drawImage(Tiles[held],-40,-40,80,80);
@@ -1000,6 +1020,14 @@ grid.render = function(ctx){
 		);
 		ctx.lineWidth = 1;
 	}
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = '#fff';
+	ctx.strokeRect(
+		0,0,
+		grid.tileWidth*grid.gridWidth,
+		grid.tileHeight*grid.gridHeight
+	);
+	ctx.lineWidth = 1;
 }
 
 grid.renderUI = function(ctx){
